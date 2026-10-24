@@ -6,6 +6,8 @@ import { formatCurrency } from "@/lib/utils";
 import { ReceiveButton } from "./purchase-client";
 import { createPurchaseWithItems } from "./actions";
 
+export const instant = false;
+
 export default async function PurchasesPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient(); const { data: user } = await supabase.auth.getUser(); if (!user.user) redirect("/login");

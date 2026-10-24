@@ -13,6 +13,8 @@ import { redirect } from "next/navigation";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { getDashboardStats } from "@/lib/dashboard";
 
+export const instant = false;
+
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: Boxes },
   { label: "Products", href: "/products", icon: PackageSearch },

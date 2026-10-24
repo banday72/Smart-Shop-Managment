@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { PosClient } from "./pos-client";
 
+export const instant = false;
+
 export default async function PosPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient();

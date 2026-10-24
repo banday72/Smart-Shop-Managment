@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 
+export const instant = false;
+
 export default async function ReportsPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient(); const { data: user } = await supabase.auth.getUser(); if (!user.user) redirect("/login");

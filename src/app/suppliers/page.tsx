@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { createSupplier } from "./actions";
 
+export const instant = false;
+
 export default async function SuppliersPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient(); const { data: user } = await supabase.auth.getUser(); if (!user.user) redirect("/login");

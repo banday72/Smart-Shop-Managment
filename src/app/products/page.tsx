@@ -6,6 +6,8 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import { ProductForm } from "./product-form";
 import { ArchiveProductButton } from "./product-actions";
 
+export const instant = false;
+
 export default async function ProductsPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient();
