@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-[#f6f8fb]">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-white px-4 py-6 lg:block">
         <div className="mb-9 flex items-center gap-3 px-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-lg font-bold text-white">B</div>
+          <Image src="/shop-management-logo.png" alt="Shop Management" width={48} height={48} className="h-12 w-12 rounded-xl object-cover" />
           <div><p className="font-semibold text-slate-900">Banday Mart</p><p className="text-xs text-slate-500">Shop management</p></div>
         </div>
         <nav className="space-y-1">

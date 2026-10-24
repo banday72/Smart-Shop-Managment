@@ -13,8 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Banday Mart | Shop Management",
+  title: "Shop Management | Banday Mart",
   description: "Professional retail shop management and inventory system",
+  icons: {
+    icon: "/shop-management-logo.png",
+    apple: "/shop-management-logo.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
