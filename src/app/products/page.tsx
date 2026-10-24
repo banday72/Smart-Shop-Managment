@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowLeft, Search } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -9,6 +10,7 @@ import { ArchiveProductButton } from "./product-actions";
 export const instant = false;
 
 export default async function ProductsPage() {
+  await connection();
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();

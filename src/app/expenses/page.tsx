@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import { ExpenseForm } from "./expense-form";
 export const instant = false;
 
 export default async function ExpensesPage() {
+  await connection();
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient(); const { data: user } = await supabase.auth.getUser(); if (!user.user) redirect("/login");
   const { data: expenses } = await supabase.from("expenses").select("id,category,amount,expense_date,payment_method,description").order("expense_date", { ascending: false }).limit(50);

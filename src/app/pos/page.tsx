@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import { PosClient } from "./pos-client";
 export const instant = false;
 
 export default async function PosPage() {
+  await connection();
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient();
   const { data: user } = await supabase.auth.getUser();

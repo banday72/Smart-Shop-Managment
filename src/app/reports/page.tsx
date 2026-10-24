@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowLeft, Download } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 export const instant = false;
 
 export default async function ReportsPage() {
+  await connection();
   if (!isSupabaseConfigured()) redirect("/dashboard");
   const supabase = await createClient(); const { data: user } = await supabase.auth.getUser(); if (!user.user) redirect("/login");
   const start = new Date(); start.setDate(start.getDate() - 30);

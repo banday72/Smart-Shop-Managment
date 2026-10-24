@@ -12,6 +12,7 @@ import {
 import { redirect } from "next/navigation";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { getDashboardStats } from "@/lib/dashboard";
+import { connection } from "next/server";
 
 export const instant = false;
 
@@ -28,6 +29,7 @@ const navItems = [
 ];
 
 export default async function DashboardPage() {
+  await connection();
   const result = await getDashboardStats();
   if (result.configured && !result.authenticated) redirect("/login");
 
