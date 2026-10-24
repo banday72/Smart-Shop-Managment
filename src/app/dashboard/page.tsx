@@ -55,7 +55,10 @@ export default async function DashboardPage() {
       </aside>
       <main className="lg:pl-64">
         <header className="flex items-center justify-between border-b bg-white px-5 py-5 sm:px-8">
-          <div><p className="text-sm text-slate-500">Saturday, October 24, 2026</p><h1 className="text-2xl font-semibold tracking-tight text-slate-900">Good morning, owner</h1></div>
+          <div className="flex items-center gap-4">
+            <Image src="/shop-management-logo.png" alt="Shop Management" width={144} height={64} className="h-14 w-36 rounded-xl object-cover object-center shadow-sm lg:hidden" />
+            <div><p className="text-sm text-slate-500">Saturday, October 24, 2026</p><h1 className="text-2xl font-semibold tracking-tight text-slate-900">Good morning, owner</h1></div>
+          </div>
           <Link href="/pos" className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">Open POS</Link>
         </header>
         <div className="space-y-6 p-5 sm:p-8">
