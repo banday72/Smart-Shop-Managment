@@ -1,0 +1,13 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { redirect } from "next/navigation";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { formatCurrency } from "@/lib/utils";
+import { ReceiveButton } from "./purchase-client";
+
+export default async function PurchasesPage() {
+  if (!isSupabaseConfigured()) redirect("/dashboard");
+  const supabase = await createClient(); const { data: user } = await supabase.auth.getUser(); if (!user.user) redirect("/login");
+  const { data: purchases } = await supabase.from("purchases").select("id, invoice_number, status, total, purchased_at, suppliers(name)").order("created_at", { ascending: false });
+  return <main className="min-h-screen bg-[#f6f8fb]"><header className="border-b bg-white px-5 py-5 sm:px-8"><Link href="/dashboard" className="flex items-center gap-2 text-sm text-slate-500"><ArrowLeft className="h-4 w-4" />Back to dashboard</Link><h1 className="mt-4 text-2xl font-semibold text-slate-900">Purchases & stock-in</h1><p className="mt-1 text-sm text-slate-500">Only received purchases update stock through the database transaction.</p></header><section className="m-5 rounded-2xl border bg-white p-5 shadow-sm sm:m-8"><div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="border-b text-xs uppercase tracking-wide text-slate-400"><tr><th className="pb-3">Invoice</th><th className="pb-3">Supplier</th><th className="pb-3">Date</th><th className="pb-3">Total</th><th className="pb-3">Status</th><th className="pb-3 text-right">Action</th></tr></thead><tbody>{purchases?.length ? purchases.map((purchase) => <tr key={purchase.id} className="border-b last:border-0"><td className="py-4 font-medium">{purchase.invoice_number || "No invoice"}</td><td className="py-4 text-slate-500">{String((purchase as { suppliers?: { name?: string } | { name?: string }[] }).suppliers ? Array.isArray((purchase as { suppliers?: { name?: string } | { name?: string }[] }).suppliers) ? ((purchase as { suppliers?: { name?: string }[] }).suppliers ?? [])[0]?.name : ((purchase as { suppliers?: { name?: string } }).suppliers)?.name : "—")}</td><td className="py-4 text-slate-500">{purchase.purchased_at}</td><td className="py-4">{formatCurrency(Number(purchase.total))}</td><td className="py-4 capitalize">{purchase.status}</td><td className="py-4 text-right">{purchase.status === "pending" && <ReceiveButton id={purchase.id} />}</td></tr>) : <tr><td colSpan={6} className="py-12 text-center text-slate-500">No purchase orders recorded.</td></tr>}</tbody></table></div></section></main>;
+}

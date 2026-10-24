@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Banday Mart
 
-## Getting Started
+Banday Mart is a production-oriented retail shop management system built with Next.js, TypeScript, Tailwind CSS, Supabase Auth/Postgres, Zod, React Hook Form, and Recharts.
 
-First, run the development server:
+## Current foundation
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js App Router with the Next 16 `proxy.ts` convention
+- Supabase SSR browser/server clients and authenticated route protection
+- PostgreSQL schema with shops, roles, products, categories, suppliers, customers, sales, purchases, inventory movements, and expenses
+- Row Level Security policies scoped to the signed-in user's shop
+- Database-backed dashboard metrics with an explicit Supabase setup state
+- PKR formatting utilities and responsive management dashboard shell
+- Server-validated POS checkout with atomic stock reduction and printable browser receipt support
+- Purchase receiving with idempotent status checks and atomic inventory movements
+- Reports with gross profit, expenses, estimated net profit, and CSV export
+- Expense management and stock adjustment database functions
+- Automated stock calculation and negative-stock prevention tests
+
+## Local setup
+
+1. Install Node.js 22 or newer.
+2. Copy `.env.example` to `.env.local` and add the URL and anon key from a Supabase project.
+3. Run `supabase/migrations/0001_initial_schema.sql`, then `supabase/migrations/0002_settings_payments_adjustments.sql` in the Supabase SQL editor.
+4. Create a user in Supabase Authentication, then insert its profile and shop:
+
+```sql
+insert into public.shops (name) values ('Banday Mart') returning id;
+insert into public.profiles (id, shop_id, full_name, role)
+values ('AUTH_USER_UUID', 'SHOP_UUID', 'Shop Owner', 'owner');
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Start the app:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open http://localhost:3000.
 
-## Learn More
+## Validation
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+npm run build
+npm test
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `/dashboard` — live shop metrics and inventory health
+- `/products` — validated product CRUD and SKU uniqueness
+- `/pos` — product search, cart, discount/tax, payment status, and atomic checkout
+- `/purchases` — purchase history and stock receiving
+- `/reports` — sales, purchases, gross profit, expenses, and CSV export
+- `/expenses` — expense entry and history
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All inventory-changing operations must use PostgreSQL functions or equivalent atomic server-side operations; frontend stock calculations are not trusted.
