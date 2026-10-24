@@ -18,7 +18,11 @@ const navItems = [
   { label: "Products", href: "/products", icon: PackageSearch },
   { label: "Point of Sale", href: "/pos", icon: ShoppingCart },
   { label: "Purchases", href: "/purchases", icon: ArrowDownToLine },
+  { label: "Suppliers", href: "/suppliers", icon: PackageSearch },
+  { label: "Customers", href: "/customers", icon: WalletCards },
   { label: "Reports", href: "/reports", icon: CircleDollarSign },
+  { label: "Expenses", href: "/expenses", icon: CircleDollarSign },
+  { label: "Settings", href: "/settings", icon: Boxes },
 ];
 
 export default async function DashboardPage() {

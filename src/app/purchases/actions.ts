@@ -33,3 +33,31 @@ export async function receivePurchase(purchaseId: string) {
   revalidatePath("/purchases"); revalidatePath("/products"); revalidatePath("/dashboard");
   return { ok: true, message: "Stock received and inventory updated." };
 }
+
+export async function createPurchaseWithItems(formData: FormData) {
+  const context = await getShopContext(["owner", "manager"]);
+  if ("error" in context) return { ok: false, message: context.error };
+  const parsed = z.object({
+    supplierId: z.string().uuid().nullable(),
+    invoiceNumber: z.string().trim().max(80).nullable(),
+    purchasedAt: z.string().date(),
+    productId: z.string().uuid(),
+    quantity: z.coerce.number().int().positive(),
+    unitCost: z.coerce.number().min(0),
+  }).safeParse({
+    supplierId: formData.get("supplierId") || null,
+    invoiceNumber: formData.get("invoiceNumber") || null,
+    purchasedAt: formData.get("purchasedAt"),
+    productId: formData.get("productId"),
+    quantity: formData.get("quantity"),
+    unitCost: formData.get("unitCost"),
+  });
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid purchase." };
+  const total = parsed.data.quantity * parsed.data.unitCost;
+  const { data: purchase, error } = await context.supabase.from("purchases").insert({ shop_id: context.shopId, supplier_id: parsed.data.supplierId, invoice_number: parsed.data.invoiceNumber, purchased_at: parsed.data.purchasedAt, total, created_by: context.userId }).select("id").single();
+  if (error || !purchase) return { ok: false, message: error?.message ?? "Could not create purchase." };
+  const { error: itemError } = await context.supabase.from("purchase_items").insert({ purchase_id: purchase.id, product_id: parsed.data.productId, quantity: parsed.data.quantity, unit_cost: parsed.data.unitCost });
+  if (itemError) return { ok: false, message: itemError.message };
+  revalidatePath("/purchases");
+  return { ok: true, message: "Purchase order created. Receive it to update stock." };
+}
