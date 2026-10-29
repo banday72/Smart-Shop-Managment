@@ -33,8 +33,9 @@ async function getAuthorizedContext(): Promise<AuthorizedContext> {
     .select("shop_id, role")
     .eq("id", userData.user.id)
     .single();
-  if (!profile || !["owner", "manager"].includes(profile.role)) {
-    return { error: "You do not have permission to manage products." };
+  const role = profile?.role?.toLowerCase();
+  if (!profile || !role || !["owner", "manager"].includes(role)) {
+    return { error: `Product management requires owner or manager access. Your current role is ${role ?? "not assigned"}. Ask the shop owner to update your profile role.` };
   }
   return { supabase, userId: userData.user.id, shopId: profile.shop_id };
 }
