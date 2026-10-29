@@ -28,7 +28,7 @@ export function ProductForm() {
         <Field name="brand" label="Brand" />
         <Field name="purchasePrice" label="Purchase price (PKR)" type="number" min="0" step="0.01" required />
         <Field name="sellingPrice" label="Selling price (PKR)" type="number" min="0" step="0.01" required />
-        <Field name="currentStock" label="Opening stock" type="number" min="0" required />
+        <Field name="currentStock" label="Opening stock (optional)" type="number" min="0" defaultValue="0" />
         <Field name="minimumStock" label="Minimum stock alert" type="number" min="0" required />
       </div>
       {message && <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">{message}</p>}
@@ -37,6 +37,6 @@ export function ProductForm() {
   );
 }
 
-function Field({ name, label, type = "text", required, min, step }: { name: string; label: string; type?: string; required?: boolean; min?: string; step?: string }) {
-  return <label className="block text-sm font-medium text-slate-700">{label}<input name={name} type={type} required={required} min={min} step={step} className="mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm" /></label>;
+function Field({ name, label, type = "text", required, min, step, defaultValue }: { name: string; label: string; type?: string; required?: boolean; min?: string; step?: string; defaultValue?: string }) {
+  return <label className="block text-sm font-medium text-slate-700">{label}<input name={name} type={type} required={required} defaultValue={defaultValue} min={min} step={step} className="mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm" /></label>;
 }
