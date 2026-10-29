@@ -20,7 +20,7 @@ Banday Mart is a production-oriented retail shop management system built with Ne
 
 1. Install Node.js 22 or newer.
 2. Copy `.env.example` to `.env.local` and add the URL and anon key from a Supabase project.
-3. Run `supabase/migrations/0001_initial_schema.sql`, then `supabase/migrations/0002_settings_payments_adjustments.sql` in the Supabase SQL editor.
+3. Run `supabase/migrations/0001_initial_schema.sql`, then `supabase/migrations/0002_settings_payments_adjustments.sql`, then `supabase/migrations/0003_admin_controls.sql` in the Supabase SQL editor.
 4. Create a user in Supabase Authentication, then insert its profile and shop:
 
 ```sql
@@ -54,5 +54,6 @@ npm test
 - `/purchases` — purchase history and stock receiving
 - `/reports` — sales, purchases, gross profit, expenses, and CSV export
 - `/expenses` — expense entry and history
+- `/admin` — owner/manager control center for modules, categories, and team roles
 
 All inventory-changing operations must use PostgreSQL functions or equivalent atomic server-side operations; frontend stock calculations are not trusted.

@@ -35,21 +35,24 @@ const emptyStats: DashboardStats = {
 export async function getDashboardStats(): Promise<{
   configured: boolean;
   authenticated: boolean;
+  fullName: string;
+  role: string;
   stats: DashboardStats;
 }> {
   if (!isSupabaseConfigured()) {
-    return { configured: false, authenticated: false, stats: emptyStats };
+    return { configured: false, authenticated: false, fullName: "", role: "", stats: emptyStats };
   }
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) {
-    return { configured: true, authenticated: false, stats: emptyStats };
+    return { configured: true, authenticated: false, fullName: "", role: "", stats: emptyStats };
   }
+  const { data: profile } = await supabase.from("profiles").select("full_name, role").eq("id", userData.user.id).single();
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayIso = today.toISOString();
+  const pakistanDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(today);
+  const todayIso = `${pakistanDate}T00:00:00+05:00`;
   const { data: products } = await supabase
     .from("products")
     .select("id, name, current_stock, minimum_stock")
@@ -83,6 +86,8 @@ export async function getDashboardStats(): Promise<{
   return {
     configured: true,
     authenticated: true,
+    fullName: profile?.full_name ?? "",
+    role: profile?.role ?? "",
     stats: {
       products: safeProducts.length,
       stockQuantity: safeProducts.reduce((sum, product) => sum + Number(product.current_stock), 0),
