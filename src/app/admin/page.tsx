@@ -3,6 +3,8 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Boxes, CircleDollarSign, Contact, PackageSearch, Settings, ShoppingCart, Truck, Users } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { ProductForm } from "@/app/products/product-form";
 import { createCategory, updateProfileRole } from "./actions";
 
 export const instant = false;
@@ -27,10 +29,12 @@ export default async function AdminPage() {
   const { data: profile } = await supabase.from("profiles").select("shop_id, role, full_name").eq("id", auth.user.id).single();
   if (!profile || !["owner", "manager"].includes(profile.role)) redirect("/dashboard");
 
-  const [{ data: shop }, { data: categories }, { data: profiles }] = await Promise.all([
+  const [{ data: shop }, { data: categories }, { data: profiles }, { data: products }, { data: sales }] = await Promise.all([
     supabase.from("shops").select("name,address,phone,currency").eq("id", profile.shop_id).single(),
     supabase.from("categories").select("id,name").eq("shop_id", profile.shop_id).order("name"),
     supabase.from("profiles").select("id,full_name,role").eq("shop_id", profile.shop_id).order("full_name"),
+    supabase.from("products").select("id,name,current_stock,selling_price").eq("shop_id", profile.shop_id).eq("is_active", true),
+    supabase.from("sales").select("id,invoice_number,total,payment_method,created_at").eq("shop_id", profile.shop_id).order("created_at", { ascending: false }).limit(5),
   ]);
   async function submitCategory(formData: FormData) {
     "use server";
@@ -51,6 +55,16 @@ export default async function AdminPage() {
         </div>
       </header>
       <div className="space-y-6 p-5 sm:p-8">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard label="Active products" value={formatNumber(products?.length ?? 0)} />
+          <SummaryCard label="Stock on hand" value={formatNumber((products ?? []).reduce((sum, product) => sum + Number(product.current_stock), 0))} />
+          <SummaryCard label="Catalog value" value={formatCurrency((products ?? []).reduce((sum, product) => sum + Number(product.current_stock) * Number(product.selling_price), 0))} />
+          <SummaryCard label="Recent sales" value={formatNumber(sales?.length ?? 0)} />
+        </section>
+        <section>
+          <ProductForm />
+          <p className="mt-2 text-xs text-slate-500">Products added here automatically appear in Products, POS, purchases, stock reports, and dashboard metrics.</p>
+        </section>
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {modules.map(({ href, label, detail, icon: Icon }) => <Link key={href} href={href} className="group rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200"><span className="inline-flex rounded-xl bg-teal-50 p-2 text-teal-600"><Icon className="h-5 w-5" /></span><p className="mt-4 font-semibold text-slate-800">{label}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></Link>)}
         </section>
@@ -64,8 +78,17 @@ export default async function AdminPage() {
             <div className="flex items-center gap-3"><Users className="h-5 w-5 text-teal-600" /><div><h2 className="font-semibold text-slate-900">Team access</h2><p className="text-sm text-slate-500">Owners can change roles for linked users.</p></div></div>
             <div className="mt-4 space-y-3">{profiles?.map((member) => <form key={member.id} action={submitRole} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><input type="hidden" name="profileId" value={member.id} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-800">{member.full_name || "Unnamed user"}</p><p className="text-xs text-slate-500">{member.id === auth.user.id ? "You" : "Linked account"}</p></div>{profile.role === "owner" ? <><select name="role" defaultValue={member.role} className="rounded-lg border bg-white px-2 py-1.5 text-sm"><option value="owner">Owner</option><option value="manager">Manager</option><option value="cashier">Cashier</option></select><button className="text-sm font-semibold text-teal-700">Save</button></> : <span className="text-sm capitalize text-slate-600">{member.role}</span>}</form>)}</div>
           </section>
+          <section className="rounded-2xl border bg-white p-5 shadow-sm">
+            <h2 className="font-semibold text-slate-900">Recent sales</h2>
+            <p className="mt-1 text-sm text-slate-500">Sales completed through POS appear here automatically.</p>
+            <div className="mt-4 space-y-3">{sales?.length ? sales.map((sale) => <div key={sale.id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3"><div><p className="text-sm font-medium text-slate-800">{sale.invoice_number}</p><p className="text-xs capitalize text-slate-500">{sale.payment_method} · {new Date(sale.created_at).toLocaleString("en-PK")}</p></div><span className="text-sm font-semibold text-slate-800">{formatCurrency(Number(sale.total))}</span></div>) : <p className="py-5 text-sm text-slate-500">No sales recorded yet.</p>}</div>
+          </section>
         </div>
       </div>
     </main>
   );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-2xl border bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p></div>;
 }

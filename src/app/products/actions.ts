@@ -83,6 +83,7 @@ export async function saveProduct(formData: FormData): Promise<ActionResult> {
   }
   revalidatePath("/products");
   revalidatePath("/dashboard");
+  revalidatePath("/admin");
   return { ok: true, message: product.id ? "Product updated." : "Product added." };
 }
 
