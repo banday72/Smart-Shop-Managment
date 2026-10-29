@@ -57,7 +57,7 @@ export default async function DashboardPage() {
               <Icon className="h-4 w-4" />{label}
             </Link>
           ))}
-          {["owner", "manager"].includes(result.role) && <Link href="/admin" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"><Boxes className="h-4 w-4" />Admin</Link>}
+          {["owner", "manager"].includes(result.role) && <Link href="/admin" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"><Boxes className="h-4 w-4" />Shop</Link>}
         </nav>
         <div className="absolute bottom-6 left-4 right-4 rounded-2xl bg-slate-900 p-4 text-white">
           <p className="text-sm font-semibold">Need help?</p><p className="mt-1 text-xs text-slate-300">Configure your shop and team from settings.</p>
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
                   <Icon className="h-4 w-4" />{label}
                 </Link>
               ))}
-              {["owner", "manager"].includes(result.role) && <Link href="/admin" className="flex shrink-0 items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm font-medium text-slate-600"><Boxes className="h-4 w-4" />Admin</Link>}
+              {["owner", "manager"].includes(result.role) && <Link href="/admin" className="flex shrink-0 items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm font-medium text-slate-600"><Boxes className="h-4 w-4" />Shop</Link>}
             </nav>
             {!result.configured && <SetupBanner />}
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
