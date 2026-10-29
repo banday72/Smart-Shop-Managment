@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f8fb;
+  --background: #f7f8fb;
   --foreground: #172033;
 }
 
@@ -20,4 +20,29 @@ body {
 
 * { border-color: #e5eaf1; }
 
-button, a, input, select { outline-color: #14b8a6; }
+.eyebrow {
+  color: #b7791f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+button, a, input, select { outline-color: #d6a84f; }
+
+::selection { background: #d6a84f; color: #0b1220; }
+
+input, select, textarea {
+  background: #ffffff;
+  border-color: #dfe4ec;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #d6a84f;
+  box-shadow: 0 0 0 3px rgb(214 168 79 / 16%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a, button { transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease; }
+}

@@ -1,29 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Image from "next/image";
+import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
+  const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const router = useRouter();
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setLoading(true);
-    const form = new FormData(event.currentTarget);
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: String(form.get("email")),
-      password: String(form.get("password")),
-    });
-    if (signInError) setError(signInError.message);
-    else router.push("/dashboard");
-    setLoading(false);
+    event.preventDefault(); setError(""); setLoading(true); const form = new FormData(event.currentTarget); const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: String(form.get("email")), password: String(form.get("password")) });
+    if (signInError) setError(signInError.message); else router.push("/dashboard"); setLoading(false);
   }
-
-  return <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5"><div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl"><div className="mb-8 flex items-center gap-3"><Image src="/shop-management-logo.png" alt="Shop Management" width={64} height={64} className="h-16 w-16 rounded-2xl object-cover" /><div><h1 className="font-semibold text-slate-900">Welcome back</h1><p className="text-sm text-slate-500">Sign in to Banday Mart</p></div></div><form onSubmit={handleSubmit} className="space-y-4"><label className="block text-sm font-medium text-slate-700">Email<input required name="email" type="email" className="mt-1.5 w-full rounded-xl border px-3 py-2.5" placeholder="you@shop.com" /></label><label className="block text-sm font-medium text-slate-700">Password<input required name="password" type="password" className="mt-1.5 w-full rounded-xl border px-3 py-2.5" placeholder="••••••••" /></label>{error && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={loading} className="w-full rounded-xl bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60">{loading ? "Signing in..." : "Sign in"}</button></form></div></main>;
+  return <main className="grid min-h-screen bg-[#0b1220] lg:grid-cols-2"><section className="relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between"><div className="absolute -left-20 top-20 h-96 w-96 rounded-full bg-amber-300/10 blur-3xl" /><div className="relative"><p className="text-sm font-bold tracking-[0.2em] text-amber-300">BANDAY MART</p><h1 className="mt-24 max-w-lg text-6xl font-semibold leading-[1.05] tracking-tight">Run the shop.<br /><span className="text-amber-300">Own the day.</span></h1><p className="mt-6 max-w-md text-lg leading-8 text-slate-400">One calm workspace for sales, stock, customers, and the decisions that keep your business moving.</p></div><div className="relative flex items-center gap-2 text-sm text-slate-400"><ShieldCheck className="h-4 w-4 text-amber-300" />Secure workspace for your team</div></section><section className="flex items-center justify-center bg-[#f7f8fb] px-5 py-12"><div className="w-full max-w-md"><div className="mb-8 lg:hidden"><p className="text-sm font-bold tracking-[0.2em] text-amber-700">BANDAY MART</p></div><div className="rounded-3xl border bg-white p-7 shadow-xl shadow-slate-900/5 sm:p-9"><div className="mb-8"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0b1220] text-amber-300"><LockKeyhole className="h-5 w-5" /></div><h2 className="mt-6 text-2xl font-semibold tracking-tight">Welcome back</h2><p className="mt-2 text-sm text-slate-500">Sign in to your retail workspace.</p></div><form onSubmit={handleSubmit} className="space-y-4"><label className="block text-sm font-medium text-slate-700">Email<input required name="email" type="email" className="mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="you@shop.com" /></label><label className="block text-sm font-medium text-slate-700">Password<input required name="password" type="password" className="mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="••••••••" /></label>{error && <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0b1220] py-3.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{loading ? "Signing in..." : "Sign in"}{!loading && <ArrowRight className="h-4 w-4 text-amber-300" />}</button></form></div></div></section></main>;
 }
