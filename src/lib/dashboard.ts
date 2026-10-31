@@ -68,20 +68,39 @@ export async function getDashboardStats(): Promise<{
     .select("total")
     .eq("status", "received")
     .gte("received_at", todayIso);
+  const weekStart = new Date(Date.now() - 6 * 86400000).toISOString();
   const { data: weeklySales } = await supabase
     .from("sales")
     .select("total, created_at")
-    .gte("created_at", new Date(Date.now() - 6 * 86400000).toISOString());
+    .gte("created_at", weekStart);
+  const { data: topItems } = await supabase
+    .from("sale_items")
+    .select("quantity, products(name), sales!inner(created_at)")
+    .gte("sales.created_at", weekStart);
 
   const safeProducts = products ?? [];
   const safeSales = sales ?? [];
+  const dayFormatter = new Intl.DateTimeFormat("en-PK", { weekday: "short", timeZone: "Asia/Karachi" });
   const dayTotals = new Map<string, number>();
   (weeklySales ?? []).forEach((sale) => {
-    const label = new Intl.DateTimeFormat("en-PK", { weekday: "short" }).format(
-      new Date(sale.created_at),
-    );
+    const label = dayFormatter.format(new Date(sale.created_at));
     dayTotals.set(label, (dayTotals.get(label) ?? 0) + Number(sale.total));
   });
+  const salesByDay = Array.from({ length: 7 }, (_, index) => {
+    const label = dayFormatter.format(new Date(Date.now() - (6 - index) * 86400000));
+    return { label, amount: dayTotals.get(label) ?? 0 };
+  });
+
+  const productTotals = new Map<string, number>();
+  (topItems ?? []).forEach((item) => {
+    const name = (item.products as { name?: string } | null)?.name;
+    if (!name) return;
+    productTotals.set(name, (productTotals.get(name) ?? 0) + Number(item.quantity));
+  });
+  const topProducts = Array.from(productTotals.entries())
+    .map(([name, quantity]) => ({ name, quantity }))
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 5);
 
   return {
     configured: true,
@@ -99,8 +118,8 @@ export async function getDashboardStats(): Promise<{
       ).length,
       outOfStock: safeProducts.filter((product) => Number(product.current_stock) <= 0).length,
       recentSales: safeSales,
-      topProducts: [],
-      salesByDay: Array.from(dayTotals.entries()).map(([label, amount]) => ({ label, amount })),
+      topProducts,
+      salesByDay,
     },
   };
 }

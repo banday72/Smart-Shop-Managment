@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { AdminShell } from "@/components/admin-shell";
+import { AppShell } from "@/components/app-shell";
+import { SalesChart } from "@/components/sales-chart";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { getDashboardStats } from "@/lib/dashboard";
 
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
   const greetingName = result.fullName || result.role || "owner";
   const today = new Intl.DateTimeFormat("en-PK", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
 
-  return <AdminShell title={`Good morning, ${greetingName}`} description={today} action={<Link href="/pos" className="rounded-xl bg-[#0b1220] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Open POS</Link>}>
+  return <AppShell title={`Good morning, ${greetingName}`} description={today} action={<Link href="/pos" className="rounded-xl bg-[#0b1220] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Open POS</Link>}>
     <div className="space-y-6">
       {!result.configured && <SetupBanner />}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-start justify-between"><div><p className="eyebrow">Performance</p><h2 className="mt-2 text-lg font-semibold">Sales overview</h2><p className="mt-1 text-sm text-slate-500">Last 7 days from completed sales</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Live data</span></div>
-          <div className="mt-8 flex h-52 items-end gap-3">{(stats.salesByDay.length ? stats.salesByDay : [{ label: "—", amount: 0 }]).map((day) => <div key={day.label} className="flex flex-1 flex-col items-center gap-2"><div className="w-full rounded-t-xl bg-gradient-to-t from-[#0b1220] to-[#d6a84f]" style={{ height: `${Math.max(4, Math.min(100, day.amount / Math.max(...stats.salesByDay.map((entry) => entry.amount), 1) * 100))}%` }} /><span className="text-xs text-slate-500">{day.label}</span></div>)}</div>
+          <SalesChart data={stats.salesByDay} />
         </div>
         <div className="rounded-3xl border bg-[#0b1220] p-5 text-white shadow-sm sm:p-6">
           <p className="eyebrow text-amber-300">Inventory health</p><h2 className="mt-2 text-lg font-semibold">Needs attention</h2><p className="mt-1 text-sm text-slate-400">Keep your shelves moving.</p>
@@ -50,9 +51,12 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="eyebrow">Shortcuts</p><h2 className="mt-2 text-lg font-semibold">Move faster</h2></div><Link href="/reports" className="flex items-center gap-1 text-sm font-semibold text-amber-700">View reports <ArrowUpRight className="h-4 w-4" /></Link></div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><QuickAction href="/pos" label="Start a sale" detail="Open checkout" icon={ShoppingCart} /><QuickAction href="/products" label="Add product" detail="Update catalog" icon={FilePlus2} /><QuickAction href="/purchases" label="Record purchase" detail="Bring stock in" icon={Truck} /><QuickAction href="/reports" label="View reports" detail="Track performance" icon={CircleDollarSign} /></div>
       </section>
-      <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><div><p className="eyebrow">Activity</p><h2 className="mt-2 text-lg font-semibold">Recent sales</h2></div><Link href="/reports" className="text-sm font-semibold text-amber-700">Sales history</Link></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[580px] text-left text-sm"><thead className="border-b text-[10px] uppercase tracking-[0.18em] text-slate-400"><tr><th className="pb-3 font-semibold">Invoice</th><th className="pb-3 font-semibold">Time</th><th className="pb-3 font-semibold">Payment</th><th className="pb-3 text-right font-semibold">Amount</th></tr></thead><tbody>{stats.recentSales.length ? stats.recentSales.map((sale) => <tr key={sale.id} className="border-b last:border-0"><td className="py-4 font-semibold text-slate-800">{sale.invoice_number}</td><td className="py-4 text-slate-500">{new Date(sale.created_at).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}</td><td className="py-4 capitalize text-slate-500">{sale.payment_method}</td><td className="py-4 text-right font-semibold text-slate-800">{formatCurrency(Number(sale.total))}</td></tr>) : <tr><td colSpan={4} className="py-10 text-center text-slate-500">No sales recorded yet.</td></tr>}</tbody></table></div></section>
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><div><p className="eyebrow">Activity</p><h2 className="mt-2 text-lg font-semibold">Recent sales</h2></div><Link href="/reports" className="text-sm font-semibold text-amber-700">Sales history</Link></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[580px] text-left text-sm"><thead className="border-b text-[10px] uppercase tracking-[0.18em] text-slate-400"><tr><th className="pb-3 font-semibold">Invoice</th><th className="pb-3 font-semibold">Time</th><th className="pb-3 font-semibold">Payment</th><th className="pb-3 text-right font-semibold">Amount</th></tr></thead><tbody>{stats.recentSales.length ? stats.recentSales.map((sale) => <tr key={sale.id} className="border-b last:border-0"><td className="py-4 font-semibold text-slate-800">{sale.invoice_number}</td><td className="py-4 text-slate-500">{new Date(sale.created_at).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}</td><td className="py-4 capitalize text-slate-500">{sale.payment_method}</td><td className="py-4 text-right font-semibold text-slate-800">{formatCurrency(Number(sale.total))}</td></tr>) : <tr><td colSpan={4} className="py-10 text-center text-slate-500">No sales recorded yet.</td></tr>}</tbody></table></div></div>
+        <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6"><p className="eyebrow">Best sellers</p><h2 className="mt-2 text-lg font-semibold">Top products</h2><p className="mt-1 text-sm text-slate-500">Last 7 days by units sold.</p><div className="mt-5 space-y-3">{stats.topProducts.length ? stats.topProducts.map((product, index) => <div key={product.name} className="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0b1220] text-xs font-bold text-amber-300">{index + 1}</span><span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{product.name}</span><span className="text-sm font-semibold text-slate-900">{formatNumber(product.quantity)} sold</span></div>) : <p className="py-8 text-center text-sm text-slate-500">No sales in the last 7 days.</p>}</div></div>
+      </section>
     </div>
-  </AdminShell>;
+  </AppShell>;
 }
 
 function SetupBanner() { return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><strong>Connect Supabase to activate live data.</strong><p className="mt-1 text-amber-800">Add your project keys to <code>.env.local</code> and run the migrations.</p></div>; }

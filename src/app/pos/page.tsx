@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { PosClient } from "./pos-client";
-import { AdminShell } from "@/components/admin-shell";
+import { AppShell } from "@/components/app-shell";
 
 export const instant = false;
 
@@ -13,5 +13,5 @@ export default async function PosPage() {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) redirect("/login");
   const { data: products } = await supabase.from("products").select("id, name, sku, barcode, selling_price, current_stock").eq("is_active", true).gt("current_stock", 0).order("name");
-  return <AdminShell title="Point of sale" description="Search products, build a cart, and complete an atomic sale."><PosClient products={(products ?? []) as never} /></AdminShell>;
+  return <AppShell title="Point of sale" description="Search products, build a cart, and complete an atomic sale."><PosClient products={(products ?? []) as never} /></AppShell>;
 }

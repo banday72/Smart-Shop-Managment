@@ -46,3 +46,10 @@ input:focus, select:focus, textarea:focus {
 @media (prefers-reduced-motion: no-preference) {
   a, button { transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease; }
 }
+
+@media print {
+  body * { visibility: hidden; }
+  .receipt, .receipt * { visibility: visible; }
+  .receipt { position: absolute; inset: 0; width: 100%; border: 0; box-shadow: none; padding: 24px; }
+  .receipt button { display: none; }
+}

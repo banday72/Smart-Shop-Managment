@@ -14,7 +14,7 @@ const productSchema = z.object({
   supplierId: z.string().uuid().optional(),
   purchasePrice: z.coerce.number().min(0),
   sellingPrice: z.coerce.number().min(0),
-  currentStock: z.coerce.number().int().min(0),
+  currentStock: z.coerce.number().int().min(0).optional(),
   minimumStock: z.coerce.number().int().min(0),
 });
 
@@ -70,13 +70,14 @@ export async function saveProduct(formData: FormData): Promise<ActionResult> {
     supplier_id: product.supplierId || null,
     purchase_price: product.purchasePrice,
     selling_price: product.sellingPrice,
-    current_stock: product.currentStock,
     minimum_stock: product.minimumStock,
     updated_at: new Date().toISOString(),
   };
+  // Opening stock is only set on creation. Later changes must go through
+  // purchases, sales, or adjust_stock so inventory movements stay auditable.
   const query = product.id
     ? context.supabase.from("products").update(payload).eq("id", product.id).eq("shop_id", context.shopId)
-    : context.supabase.from("products").insert(payload);
+    : context.supabase.from("products").insert({ ...payload, current_stock: product.currentStock ?? 0 });
   const { error } = await query;
   if (error) {
     if (error.code === "23505") return { ok: false, message: "That SKU already exists in this shop." };

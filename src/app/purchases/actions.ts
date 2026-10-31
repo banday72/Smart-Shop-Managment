@@ -16,6 +16,15 @@ export async function createPurchase(input: unknown) {
   if ("error" in context) return { ok: false, message: context.error };
   const parsed = purchaseSchema.safeParse(input);
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid purchase." };
+  const productIds = [...new Set(parsed.data.items.map((item) => item.productId))];
+  const { data: validProducts } = await context.supabase
+    .from("products")
+    .select("id")
+    .eq("shop_id", context.shopId)
+    .eq("is_active", true)
+    .in("id", productIds);
+  if ((validProducts?.length ?? 0) !== productIds.length) return { ok: false, message: "One or more products are not available in this shop." };
+
   const total = parsed.data.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
   const { data: purchase, error } = await context.supabase.from("purchases").insert({ shop_id: context.shopId, supplier_id: parsed.data.supplierId, invoice_number: parsed.data.invoiceNumber, purchased_at: parsed.data.purchasedAt, total, created_by: context.userId }).select("id").single();
   if (error || !purchase) return { ok: false, message: error?.message ?? "Could not create purchase." };
@@ -53,6 +62,14 @@ export async function createPurchaseWithItems(formData: FormData) {
     unitCost: formData.get("unitCost"),
   });
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid purchase." };
+  const { data: validProduct } = await context.supabase
+    .from("products")
+    .select("id")
+    .eq("id", parsed.data.productId)
+    .eq("shop_id", context.shopId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!validProduct) return { ok: false, message: "That product is not available in this shop." };
   const total = parsed.data.quantity * parsed.data.unitCost;
   const { data: purchase, error } = await context.supabase.from("purchases").insert({ shop_id: context.shopId, supplier_id: parsed.data.supplierId, invoice_number: parsed.data.invoiceNumber, purchased_at: parsed.data.purchasedAt, total, created_by: context.userId }).select("id").single();
   if (error || !purchase) return { ok: false, message: error?.message ?? "Could not create purchase." };

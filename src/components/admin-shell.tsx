@@ -2,23 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Boxes,
   ChevronRight,
   CircleDollarSign,
   LayoutDashboard,
+  LogOut,
   Menu,
   PackageSearch,
   Settings,
   ShoppingCart,
+  Store,
   Truck,
   Users,
+  UserSquare2,
   WalletCards,
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
+
+type ShellUser = { fullName: string; role: string };
 
 const primaryNavigation = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -40,14 +47,39 @@ export function AdminShell({
   title,
   description,
   action,
+  user,
 }: {
   children: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
+  user?: ShellUser;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const canManageTeam = user ? ["owner", "manager"].includes(user.role) : false;
+  const initials = (user?.fullName || "BM")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "BM";
+
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      toast.error("Could not sign out. Please try again.");
+      setSigningOut(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#f7f8fb] text-slate-950">
@@ -62,13 +94,33 @@ export function AdminShell({
         <div className="mt-10 flex-1 space-y-7 overflow-y-auto">
           <NavGroup label="Workspace" items={primaryNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
           <NavGroup label="Business" items={businessNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
+          {canManageTeam && (
+            <NavGroup
+              label="Administration"
+              items={[{ label: "Team access", href: "/admin", icon: UserSquare2 }]}
+              pathname={pathname}
+              close={() => setMobileOpen(false)}
+            />
+          )}
           <Link href="/store" className="flex items-center gap-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-3 text-sm font-medium text-amber-100 transition hover:bg-amber-300/15">
             <WalletCards className="h-4 w-4 text-amber-300" />Open customer store<ChevronRight className="ml-auto h-4 w-4 opacity-60" />
           </Link>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Banday Pro</p>
-          <p className="mt-2 text-sm text-slate-300">Your shop is ready for its next sale.</p>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-300 text-sm font-bold text-[#0b1220]">{initials}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{user?.fullName || "Banday Mart"}</p>
+              <p className="text-xs capitalize text-slate-400">{user?.role || "Workspace"}</p>
+            </div>
+          </div>
+          <button
+            onClick={signOut}
+            disabled={signingOut}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-60"
+          >
+            <LogOut className="h-3.5 w-3.5" />{signingOut ? "Signing out..." : "Sign out"}
+          </button>
         </div>
       </aside>
       {mobileOpen && <button className="fixed inset-0 z-30 bg-slate-950/60 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation overlay" />}
@@ -79,7 +131,7 @@ export function AdminShell({
               <button className="rounded-xl border border-slate-200 p-2 text-slate-600 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu className="h-5 w-5" /></button>
               <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-600">Workspace</p><h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>{description && <p className="mt-1 hidden text-sm text-slate-500 sm:block">{description}</p>}</div>
             </div>
-            <div className="flex items-center gap-2">{action}<div className="hidden h-10 w-10 items-center justify-center rounded-full bg-[#0b1220] text-sm font-bold text-amber-300 sm:flex">BM</div></div>
+            <div className="flex items-center gap-2">{action}<Link href="/store" className="hidden h-10 w-10 items-center justify-center rounded-full bg-[#0b1220] text-amber-300 sm:flex" aria-label="Open customer store"><Store className="h-4 w-4" /></Link></div>
           </div>
         </header>
         <div className="p-5 sm:p-8">{children}</div>
@@ -88,6 +140,6 @@ export function AdminShell({
   );
 }
 
-function NavGroup({ label, items, pathname, close }: { label: string; items: typeof primaryNavigation; pathname: string; close: () => void }) {
+function NavGroup({ label, items, pathname, close }: { label: string; items: { label: string; href: string; icon: typeof LayoutDashboard }[]; pathname: string; close: () => void }) {
   return <div><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p><nav className="space-y-1">{items.map(({ label: itemLabel, href, icon: Icon }) => { const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`)); return <Link key={href} href={href} onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${active ? "bg-amber-300 text-[#0b1220] shadow-lg shadow-amber-500/10" : "text-slate-300 hover:bg-white/8 hover:text-white"}`}><Icon className="h-4 w-4" />{itemLabel}</Link>; })}</nav></div>;
 }
