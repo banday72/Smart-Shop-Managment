@@ -25,8 +25,9 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Refresh the session for every route, not only the dashboard.
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally (asymmetric keys) instead of round-tripping to Auth on every navigation.
+  const { data: claims } = await supabase.auth.getClaims();
+  const user = claims?.claims?.sub;
 
   // API routes refresh the session but return their own 401s instead of a redirect.
   if (!user && !pathname.startsWith("/api") && !isPublicPath(pathname)) {

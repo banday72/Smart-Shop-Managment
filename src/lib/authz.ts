@@ -1,12 +1,32 @@
+import { cache } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
-export async function getShopContext(roles?: string[]) {
+const loadShopContext = cache(async () => {
   if (!isSupabaseConfigured()) return { error: "Supabase is not configured." } as const;
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return { error: "You must be signed in." } as const;
-  const { data: profile } = await supabase.from("profiles").select("shop_id, role, full_name").eq("id", auth.user.id).single();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { error: "You must be signed in." } as const;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("shop_id, role, full_name")
+    .eq("id", userId)
+    .single();
   if (!profile) return { error: "Your account is not linked to a shop." } as const;
-  if (roles && !roles.includes(profile.role)) return { error: "You do not have permission for this action." } as const;
-  return { supabase, userId: auth.user.id, shopId: profile.shop_id, role: profile.role, fullName: profile.full_name } as const;
+  return {
+    supabase,
+    userId,
+    shopId: profile.shop_id,
+    role: profile.role,
+    fullName: profile.full_name,
+  } as const;
+});
+
+export async function getShopContext(roles?: string[]) {
+  const context = await loadShopContext();
+  if ("error" in context) return context;
+  if (roles && !roles.includes(context.role)) {
+    return { error: "You do not have permission for this action." } as const;
+  }
+  return context;
 }

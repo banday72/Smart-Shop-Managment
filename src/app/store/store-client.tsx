@@ -11,7 +11,20 @@ export function StoreClient({ products }: { products: Product[] }) {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const totalItems = useMemo(() => Object.values(cart).reduce((sum, quantity) => sum + quantity, 0), [cart]);
-  const filtered = products.filter((product) => `${product.name} ${product.sku} ${product.brand ?? ""}`.toLowerCase().includes(query.toLowerCase()));
+  const searchableProducts = useMemo(
+    () => products.map((product) => ({
+      product,
+      searchText: `${product.name} ${product.sku} ${product.brand ?? ""}`.toLowerCase(),
+    })),
+    [products],
+  );
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () => searchableProducts
+      .filter(({ searchText }) => searchText.includes(normalizedQuery))
+      .map(({ product }) => product),
+    [normalizedQuery, searchableProducts],
+  );
 
   function change(id: string, amount: number, stock: number) {
     setCart((current) => {

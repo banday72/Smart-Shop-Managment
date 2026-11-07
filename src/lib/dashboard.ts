@@ -1,4 +1,4 @@
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getShopContext } from "@/lib/authz";
 
 export type DashboardStats = {
   products: number;
@@ -39,50 +39,40 @@ export async function getDashboardStats(): Promise<{
   role: string;
   stats: DashboardStats;
 }> {
-  if (!isSupabaseConfigured()) {
-    return { configured: false, authenticated: false, fullName: "", role: "", stats: emptyStats };
+  const context = await getShopContext();
+  if ("error" in context) {
+    const configured = context.error !== "Supabase is not configured.";
+    return { configured, authenticated: false, fullName: "", role: "", stats: emptyStats };
   }
 
-  const supabase = await createClient();
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
-    return { configured: true, authenticated: false, fullName: "", role: "", stats: emptyStats };
-  }
-  const { data: profile } = await supabase.from("profiles").select("full_name, role").eq("id", userData.user.id).single();
-
+  const { supabase, fullName, role } = context;
   const today = new Date();
   const pakistanDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(today);
   const todayIso = `${pakistanDate}T00:00:00+05:00`;
-  const { data: products } = await supabase
-    .from("products")
-    .select("id, name, current_stock, minimum_stock")
-    .eq("is_active", true);
-  const { data: sales } = await supabase
-    .from("sales")
-    .select("id, invoice_number, total, payment_method, created_at, gross_profit")
-    .gte("created_at", todayIso)
-    .order("created_at", { ascending: false })
-    .limit(8);
-  const { data: purchases } = await supabase
-    .from("purchases")
-    .select("total")
-    .eq("status", "received")
-    .gte("received_at", todayIso);
   const weekStart = new Date(Date.now() - 6 * 86400000).toISOString();
-  const { data: weeklySales } = await supabase
-    .from("sales")
-    .select("total, created_at")
-    .gte("created_at", weekStart);
-  const { data: topItems } = await supabase
-    .from("sale_items")
-    .select("quantity, products(name), sales!inner(created_at)")
-    .gte("sales.created_at", weekStart);
 
-  const safeProducts = products ?? [];
-  const safeSales = sales ?? [];
+  // Run every dashboard query together instead of awaiting them one by one.
+  const [productsRes, salesRes, purchasesRes, weeklyRes, topItemsRes] = await Promise.all([
+    supabase.from("products").select("id, name, current_stock, minimum_stock").eq("is_active", true),
+    supabase
+      .from("sales")
+      .select("id, invoice_number, total, payment_method, created_at, gross_profit")
+      .gte("created_at", todayIso)
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase.from("purchases").select("total").eq("status", "received").gte("received_at", todayIso),
+    supabase.from("sales").select("total, created_at").gte("created_at", weekStart),
+    supabase
+      .from("sale_items")
+      .select("quantity, products(name), sales!inner(created_at)")
+      .gte("sales.created_at", weekStart),
+  ]);
+
+  const safeProducts = productsRes.data ?? [];
+  const safeSales = salesRes.data ?? [];
   const dayFormatter = new Intl.DateTimeFormat("en-PK", { weekday: "short", timeZone: "Asia/Karachi" });
   const dayTotals = new Map<string, number>();
-  (weeklySales ?? []).forEach((sale) => {
+  (weeklyRes.data ?? []).forEach((sale) => {
     const label = dayFormatter.format(new Date(sale.created_at));
     dayTotals.set(label, (dayTotals.get(label) ?? 0) + Number(sale.total));
   });
@@ -92,7 +82,7 @@ export async function getDashboardStats(): Promise<{
   });
 
   const productTotals = new Map<string, number>();
-  (topItems ?? []).forEach((item) => {
+  (topItemsRes.data ?? []).forEach((item) => {
     const name = (item.products as { name?: string } | null)?.name;
     if (!name) return;
     productTotals.set(name, (productTotals.get(name) ?? 0) + Number(item.quantity));
@@ -105,13 +95,13 @@ export async function getDashboardStats(): Promise<{
   return {
     configured: true,
     authenticated: true,
-    fullName: profile?.full_name ?? "",
-    role: profile?.role ?? "",
+    fullName,
+    role,
     stats: {
       products: safeProducts.length,
       stockQuantity: safeProducts.reduce((sum, product) => sum + Number(product.current_stock), 0),
       todaysSales: safeSales.reduce((sum, sale) => sum + Number(sale.total), 0),
-      todaysPurchases: (purchases ?? []).reduce((sum, purchase) => sum + Number(purchase.total), 0),
+      todaysPurchases: (purchasesRes.data ?? []).reduce((sum, purchase) => sum + Number(purchase.total), 0),
       grossProfit: safeSales.reduce((sum, sale) => sum + Number(sale.gross_profit ?? 0), 0),
       lowStock: safeProducts.filter(
         (product) => Number(product.current_stock) > 0 && Number(product.current_stock) <= Number(product.minimum_stock),

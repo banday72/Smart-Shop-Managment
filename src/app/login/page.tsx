@@ -30,7 +30,6 @@ export default function LoginPage() {
     const nextPath = new URLSearchParams(window.location.search).get("next");
     const destination = nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/dashboard";
     router.push(destination);
-    router.refresh();
   }
 
   return (
