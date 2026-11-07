@@ -86,7 +86,7 @@ export function AdminShell({
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-[#0b1220] px-5 py-6 text-white transition-transform lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex items-center justify-between px-2">
           <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
-            <Image src="/shop-management-logo.png" alt="Banday Mart" width={44} height={44} className="h-11 w-11 rounded-2xl object-cover ring-1 ring-white/15" />
+            <Image src="/logo.png" alt="Banday Mart" width={44} height={44} className="h-11 w-11 rounded-2xl object-cover ring-1 ring-white/15" />
             <span><strong className="block text-sm tracking-wide">BANDAY MART</strong><small className="text-xs text-slate-400">Retail command center</small></span>
           </Link>
           <button className="rounded-lg p-2 text-slate-400 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X className="h-5 w-5" /></button>

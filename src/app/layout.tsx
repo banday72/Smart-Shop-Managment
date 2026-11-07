@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   title: "Banday Mart | Retail, simplified",
   description: "A modern retail workspace for products, sales, inventory, and customers.",
   icons: {
-    icon: "/shop-management-logo.png",
-    apple: "/shop-management-logo.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
