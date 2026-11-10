@@ -12,5 +12,5 @@ export default async function PosPage() {
     supabase.from("products").select("id, name, sku, barcode, selling_price, current_stock").eq("is_active", true).gt("current_stock", 0).order("name"),
     supabase.from("customers").select("id,name,phone").order("name"),
   ]);
-  return <PosClient products={(products ?? []) as never} customers={(customers ?? []) as never} />;
+  return <PosClient shopId={context.shopId} products={(products ?? []) as never} customers={(customers ?? []) as never} />;
 }

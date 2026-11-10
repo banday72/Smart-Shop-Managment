@@ -51,6 +51,7 @@ const routeMeta: { href: string; title: string; description: string; action?: "e
   { href: "/expenses", title: "Expenses", description: "Track operating expenses separately from COGS and revenue." },
   { href: "/settings", title: "Shop settings", description: "Configure your shop identity, currency, and language." },
   { href: "/admin", title: "Team access", description: "Review access requests, manage roles, and keep categories tidy." },
+  { href: "/admin/audit", title: "Audit log", description: "Review sensitive changes made in your shop." },
 ];
 
 function metaFor(pathname: string) {

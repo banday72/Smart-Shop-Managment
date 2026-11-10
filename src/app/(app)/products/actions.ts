@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getShopContext } from "@/lib/authz";
 
 const productSchema = z.object({
   id: z.string().uuid().optional(),
@@ -19,30 +19,10 @@ const productSchema = z.object({
 });
 
 type ActionResult = { ok: true; message: string } | { ok: false; message: string };
-type AuthorizedContext =
-  | { supabase: Awaited<ReturnType<typeof createClient>>; userId: string; shopId: string }
-  | { error: string };
-
-async function getAuthorizedContext(): Promise<AuthorizedContext> {
-  if (!isSupabaseConfigured()) return { error: "Supabase is not configured." };
-  const supabase = await createClient();
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return { error: "You must be signed in." };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("shop_id, role")
-    .eq("id", userData.user.id)
-    .single();
-  const role = profile?.role?.toLowerCase();
-  if (!profile || !role || !["owner", "manager"].includes(role)) {
-    return { error: `Product management requires owner or manager access. Your current role is ${role ?? "not assigned"}. Ask the shop owner to update your profile role.` };
-  }
-  return { supabase, userId: userData.user.id, shopId: profile.shop_id };
-}
 
 export async function saveProduct(formData: FormData): Promise<ActionResult> {
-  const context = await getAuthorizedContext();
-  if (!("supabase" in context)) return { ok: false, message: context.error };
+  const context = await getShopContext(["owner", "manager"]);
+  if ("error" in context) return { ok: false, message: context.error ?? "You do not have permission for this action." };
 
   const parsed = productSchema.safeParse({
     id: formData.get("id") || undefined,
@@ -90,8 +70,8 @@ export async function saveProduct(formData: FormData): Promise<ActionResult> {
 }
 
 export async function deleteProduct(productId: string): Promise<ActionResult> {
-  const context = await getAuthorizedContext();
-  if (!("supabase" in context)) return { ok: false, message: context.error };
+  const context = await getShopContext(["owner", "manager"]);
+  if ("error" in context) return { ok: false, message: context.error ?? "You do not have permission for this action." };
   const parsed = z.string().uuid().safeParse(productId);
   if (!parsed.success) return { ok: false, message: "Invalid product ID." };
   const { error } = await context.supabase

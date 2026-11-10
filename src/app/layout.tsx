@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Banday Mart | Retail, simplified",
   description: "A modern retail workspace for products, sales, inventory, and customers.",
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",

@@ -11,7 +11,7 @@ export default async function ShopPage() {
 
   const [{ data: shop }, { data: team }, { data: requests }, { data: categories }] = await Promise.all([
     supabase.from("shops").select("name").eq("id", shopId).single(),
-    supabase.from("profiles").select("id,full_name,role").eq("shop_id", shopId).order("created_at"),
+    supabase.from("shop_members").select("user_id,full_name,role").eq("shop_id", shopId).order("created_at"),
     supabase.from("team_access_requests").select("id,full_name,email,requested_role").eq("shop_id", shopId).eq("status", "pending").order("created_at"),
     supabase.from("categories").select("id,name").order("name"),
   ]);
@@ -41,10 +41,10 @@ export default async function ShopPage() {
           <p className="eyebrow">Current team</p><h2 className="mt-2 text-lg font-semibold">Members</h2>
           <div className="mt-4 divide-y">
             {team?.map((member) => (
-              <div key={member.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div><p className="font-medium text-slate-800">{member.full_name || "Unnamed member"}</p>{member.id === userId && <p className="text-xs text-amber-600">You</p>}</div>
+              <div key={member.user_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div><p className="font-medium text-slate-800">{member.full_name || "Unnamed member"}</p>{member.user_id === userId && <p className="text-xs text-amber-600">You</p>}</div>
                 {isOwner ? (
-                  <ChangeRoleForm profileId={member.id} role={member.role} />
+                  <ChangeRoleForm profileId={member.user_id} role={member.role} />
                 ) : <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{member.role}</span>}
               </div>
             ))}

@@ -7,18 +7,22 @@ const loadShopContext = cache(async () => {
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
   if (!userId) return { error: "You must be signed in." } as const;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("shop_id, role, full_name")
-    .eq("id", userId)
-    .single();
-  if (!profile) return { error: "Your account is not linked to a shop." } as const;
+  const activeShopId = typeof claims.claims.user_metadata?.active_shop_id === "string"
+    ? claims.claims.user_metadata.active_shop_id
+    : undefined;
+  const { data: memberships } = await supabase
+    .from("shop_members")
+    .select("shop_id, role, full_name, created_at")
+    .eq("user_id", userId)
+    .order("created_at");
+  const membership = memberships?.find((entry) => entry.shop_id === activeShopId) ?? memberships?.[0];
+  if (!membership) return { error: "Your account is not linked to a shop." } as const;
   return {
     supabase,
     userId,
-    shopId: profile.shop_id,
-    role: profile.role,
-    fullName: profile.full_name,
+    shopId: membership.shop_id,
+    role: membership.role,
+    fullName: membership.full_name,
   } as const;
 });
 

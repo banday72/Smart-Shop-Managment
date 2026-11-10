@@ -23,7 +23,7 @@ export async function updateProfileRole(formData: FormData) {
   const parsed = z.object({ profileId: z.string().uuid(), role: z.enum(["owner", "manager", "cashier"]) }).safeParse({ profileId: formData.get("profileId"), role: formData.get("role") });
   if (!parsed.success) return { ok: false, message: "Invalid profile role." };
   if (parsed.data.profileId === context.userId && parsed.data.role !== "owner") return { ok: false, message: "You cannot remove your own owner access." };
-  const { error } = await context.supabase.from("profiles").update({ role: parsed.data.role }).eq("id", parsed.data.profileId).eq("shop_id", context.shopId);
+  const { error } = await context.supabase.from("shop_members").update({ role: parsed.data.role, updated_at: new Date().toISOString() }).eq("user_id", parsed.data.profileId).eq("shop_id", context.shopId);
   if (error) return { ok: false, message: error.message };
   revalidatePath("/admin");
   return { ok: true, message: "Role updated." };

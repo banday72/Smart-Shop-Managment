@@ -25,9 +25,13 @@ const databaseVersion = 1;
 const productsStore = "products";
 const salesStore = "sales";
 
-function openDatabase(): Promise<IDBDatabase> {
+function databaseNameForShop(shopId: string) {
+  return `${databaseName}-${shopId}`;
+}
+
+function openDatabase(shopId: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, databaseVersion);
+    const request = indexedDB.open(databaseNameForShop(shopId), databaseVersion);
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(productsStore)) database.createObjectStore(productsStore, { keyPath: "id" });
@@ -38,9 +42,9 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-export async function cacheProducts(products: OfflineProduct[]) {
+export async function cacheProducts(shopId: string, products: OfflineProduct[]) {
   if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
+  const database = await openDatabase(shopId);
   await new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(productsStore, "readwrite");
     const store = transaction.objectStore(productsStore);
@@ -51,9 +55,9 @@ export async function cacheProducts(products: OfflineProduct[]) {
   database.close();
 }
 
-export async function readCachedProducts(): Promise<OfflineProduct[]> {
+export async function readCachedProducts(shopId: string): Promise<OfflineProduct[]> {
   if (typeof indexedDB === "undefined") return [];
-  const database = await openDatabase();
+  const database = await openDatabase(shopId);
   const products = await new Promise<OfflineProduct[]>((resolve, reject) => {
     const request = database.transaction(productsStore, "readonly").objectStore(productsStore).getAll();
     request.onsuccess = () => resolve(request.result as OfflineProduct[]);
@@ -63,9 +67,9 @@ export async function readCachedProducts(): Promise<OfflineProduct[]> {
   return products;
 }
 
-export async function queueSale(sale: QueuedSale) {
+export async function queueSale(shopId: string, sale: QueuedSale) {
   if (typeof indexedDB === "undefined") throw new Error("Offline storage is not available in this browser.");
-  const database = await openDatabase();
+  const database = await openDatabase(shopId);
   await new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(salesStore, "readwrite");
     transaction.objectStore(salesStore).put(sale);
@@ -75,9 +79,9 @@ export async function queueSale(sale: QueuedSale) {
   database.close();
 }
 
-export async function readQueuedSales(): Promise<QueuedSale[]> {
+export async function readQueuedSales(shopId: string): Promise<QueuedSale[]> {
   if (typeof indexedDB === "undefined") return [];
-  const database = await openDatabase();
+  const database = await openDatabase(shopId);
   const sales = await new Promise<QueuedSale[]>((resolve, reject) => {
     const request = database.transaction(salesStore, "readonly").objectStore(salesStore).getAll();
     request.onsuccess = () => resolve(request.result as QueuedSale[]);
@@ -87,9 +91,9 @@ export async function readQueuedSales(): Promise<QueuedSale[]> {
   return sales.sort((left, right) => left.createdAt.localeCompare(right.createdAt));
 }
 
-export async function removeQueuedSale(id: string) {
+export async function removeQueuedSale(shopId: string, id: string) {
   if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
+  const database = await openDatabase(shopId);
   await new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(salesStore, "readwrite");
     transaction.objectStore(salesStore).delete(id);

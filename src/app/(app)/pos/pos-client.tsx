@@ -33,7 +33,7 @@ function subscribeToOnlineStatus(onChange: () => void) {
   };
 }
 
-export function PosClient({ products, customers }: { products: Product[]; customers: Customer[] }) {
+export function PosClient({ shopId, products, customers }: { shopId: string; products: Product[]; customers: Customer[] }) {
   const [availableProducts, setAvailableProducts] = useState<Product[]>(products);
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -68,24 +68,30 @@ export function PosClient({ products, customers }: { products: Product[]; custom
   const canWorkOffline = paymentMethod === "cash" && paymentStatus === "paid" && !customerId;
 
   const refreshPendingCount = useCallback(async () => {
-    const queued = await readQueuedSales();
+    const queued = await readQueuedSales(shopId);
     setPendingSales(queued.length);
     return queued;
-  }, []);
+  }, [shopId]);
 
   const syncQueuedSales = useCallback(async () => {
     if (!navigator.onLine) return;
     const queued = await refreshPendingCount();
     for (const sale of queued) {
-      const result = await completeSale(sale);
+      let result: Awaited<ReturnType<typeof completeSale>>;
+      try {
+        result = await completeSale(sale);
+      } catch {
+        setMessage(`Offline sale ${sale.invoiceNumber} is waiting: the server could not be reached.`);
+        break;
+      }
       if (!result.ok) {
         setMessage(`Offline sale ${sale.invoiceNumber} is waiting: ${result.message ?? "Sync failed."}`);
         break;
       }
-      await removeQueuedSale(sale.id);
+      await removeQueuedSale(shopId, sale.id);
     }
     await refreshPendingCount();
-  }, [refreshPendingCount]);
+  }, [refreshPendingCount, shopId]);
 
   useEffect(() => {
     const handleOnline = () => void syncQueuedSales();
@@ -94,9 +100,9 @@ export function PosClient({ products, customers }: { products: Product[]; custom
     void (async () => {
       try {
         if (products.length) {
-          await cacheProducts(products);
+          await cacheProducts(shopId, products);
         } else {
-          setAvailableProducts(await readCachedProducts() as Product[]);
+          setAvailableProducts(await readCachedProducts(shopId) as Product[]);
         }
         await refreshPendingCount();
         if (navigator.onLine) await syncQueuedSales();
@@ -108,7 +114,7 @@ export function PosClient({ products, customers }: { products: Product[]; custom
     return () => {
       window.removeEventListener("online", handleOnline);
     };
-  }, [products, refreshPendingCount, syncQueuedSales]);
+  }, [products, refreshPendingCount, shopId, syncQueuedSales]);
 
   function add(product: Product) {
     const stock = Number(product.current_stock);
@@ -188,7 +194,7 @@ export function PosClient({ products, customers }: { products: Product[]; custom
         return;
       }
       try {
-        await queueSale(sale);
+        await queueSale(shopId, sale);
       } catch {
         setMessage("This browser cannot save offline sales. Reconnect before completing checkout.");
         toast.error("Offline storage is unavailable.");
