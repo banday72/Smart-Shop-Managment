@@ -8,7 +8,6 @@ import {
   BarChart3,
   Boxes,
   ClipboardList,
-  ChevronRight,
   CircleDollarSign,
   Download,
   LayoutDashboard,
@@ -16,10 +15,8 @@ import {
   PackageSearch,
   Settings,
   ShoppingCart,
-  Store,
   Truck,
   Users,
-  WalletCards,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -70,12 +67,14 @@ export function AdminShell({
   children,
   account,
   adminNav,
-  storeHref,
+  sidebarStoreLink,
+  headerStoreLink,
 }: {
   children: React.ReactNode;
   account: React.ReactNode;
   adminNav: React.ReactNode;
-  storeHref: string;
+  sidebarStoreLink: React.ReactNode;
+  headerStoreLink: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -95,9 +94,7 @@ export function AdminShell({
           <NavGroup label="Workspace" items={primaryNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
           <NavGroup label="Business" items={businessNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
           {adminNav}
-          <Link href={storeHref} className="flex items-center gap-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-3 text-sm font-medium text-amber-100 transition hover:bg-amber-300/15">
-            <WalletCards className="h-4 w-4 text-amber-300" />Open customer store<ChevronRight className="ml-auto h-4 w-4 opacity-60" />
-          </Link>
+          {sidebarStoreLink}
         </div>
         {account}
       </aside>
@@ -115,7 +112,7 @@ export function AdminShell({
               ) : (
                 <Link href="/pos" className="rounded-xl bg-[#0b1220] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Open POS</Link>
               )}
-              <Link href={storeHref} className="hidden h-10 w-10 items-center justify-center rounded-full bg-[#0b1220] text-amber-300 sm:flex" aria-label="Open customer store"><Store className="h-4 w-4" /></Link>
+              {headerStoreLink}
             </div>
           </div>
         </header>
