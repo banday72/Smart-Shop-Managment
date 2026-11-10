@@ -7,6 +7,7 @@ import {
   ArrowDownToLine,
   BarChart3,
   Boxes,
+  ClipboardList,
   ChevronRight,
   CircleDollarSign,
   Download,
@@ -31,6 +32,7 @@ const primaryNavigation = [
   { label: "Purchases", href: "/purchases", icon: Truck },
   { label: "Customers", href: "/customers", icon: Users },
   { label: "Suppliers", href: "/suppliers", icon: Boxes },
+  { label: "Online orders", href: "/orders", icon: ClipboardList },
 ];
 
 const businessNavigation = [
@@ -52,6 +54,8 @@ const routeMeta: { href: string; title: string; description: string; action?: "e
   { href: "/settings", title: "Shop settings", description: "Configure your shop identity, currency, and language." },
   { href: "/admin", title: "Team access", description: "Review access requests, manage roles, and keep categories tidy." },
   { href: "/admin/audit", title: "Audit log", description: "Review sensitive changes made in your shop." },
+  { href: "/orders", title: "Online orders", description: "Review and confirm customer orders." },
+  { href: "/store", title: "Customer store", description: "Share your shop's online product catalogue." },
 ];
 
 function metaFor(pathname: string) {
@@ -66,10 +70,12 @@ export function AdminShell({
   children,
   account,
   adminNav,
+  storeHref,
 }: {
   children: React.ReactNode;
   account: React.ReactNode;
   adminNav: React.ReactNode;
+  storeHref: string;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -89,7 +95,7 @@ export function AdminShell({
           <NavGroup label="Workspace" items={primaryNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
           <NavGroup label="Business" items={businessNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
           {adminNav}
-          <Link href="/store" className="flex items-center gap-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-3 text-sm font-medium text-amber-100 transition hover:bg-amber-300/15">
+          <Link href={storeHref} className="flex items-center gap-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-3 text-sm font-medium text-amber-100 transition hover:bg-amber-300/15">
             <WalletCards className="h-4 w-4 text-amber-300" />Open customer store<ChevronRight className="ml-auto h-4 w-4 opacity-60" />
           </Link>
         </div>
@@ -109,7 +115,7 @@ export function AdminShell({
               ) : (
                 <Link href="/pos" className="rounded-xl bg-[#0b1220] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Open POS</Link>
               )}
-              <Link href="/store" className="hidden h-10 w-10 items-center justify-center rounded-full bg-[#0b1220] text-amber-300 sm:flex" aria-label="Open customer store"><Store className="h-4 w-4" /></Link>
+              <Link href={storeHref} className="hidden h-10 w-10 items-center justify-center rounded-full bg-[#0b1220] text-amber-300 sm:flex" aria-label="Open customer store"><Store className="h-4 w-4" /></Link>
             </div>
           </div>
         </header>
