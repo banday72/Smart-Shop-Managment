@@ -84,7 +84,7 @@ export function AdminShell({
     <div className="min-h-screen bg-[#f7f8fb] text-slate-950">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-[#0b1220] px-5 py-6 text-white transition-transform lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex items-center justify-between px-2">
-          <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+          <Link href="/dashboard" prefetch={true} className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
             <Image src="/logo.png" alt="Banday Mart" width={44} height={44} className="h-11 w-11 rounded-2xl object-cover ring-1 ring-white/15" />
             <span><strong className="block text-sm tracking-wide">BANDAY MART</strong><small className="text-xs text-slate-400">Retail command center</small></span>
           </Link>
@@ -110,7 +110,7 @@ export function AdminShell({
               {meta.action === "export" ? (
                 <a href="/api/reports/sales" className="flex items-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"><Download className="h-4 w-4" />Export CSV</a>
               ) : (
-                <Link href="/pos" className="rounded-xl bg-[#0b1220] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Open POS</Link>
+                <Link href="/pos" prefetch={true} className="rounded-xl bg-[#0b1220] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Open POS</Link>
               )}
               {headerStoreLink}
             </div>
@@ -123,5 +123,5 @@ export function AdminShell({
 }
 
 function NavGroup({ label, items, pathname, close }: { label: string; items: { label: string; href: string; icon: typeof LayoutDashboard }[]; pathname: string; close: () => void }) {
-  return <div><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p><nav className="space-y-1">{items.map(({ label: itemLabel, href, icon: Icon }) => { const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`)); return <Link key={href} href={href} onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${active ? "bg-amber-300 text-[#0b1220] shadow-lg shadow-amber-500/10" : "text-slate-300 hover:bg-white/8 hover:text-white"}`}><Icon className="h-4 w-4" />{itemLabel}</Link>; })}</nav></div>;
+  return <div><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p><nav className="space-y-1">{items.map(({ label: itemLabel, href, icon: Icon }) => { const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`)); return <Link key={href} href={href} prefetch={true} onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${active ? "bg-amber-300 text-[#0b1220] shadow-lg shadow-amber-500/10" : "text-slate-300 hover:bg-white/8 hover:text-white"}`}><Icon className="h-4 w-4" />{itemLabel}</Link>; })}</nav></div>;
 }
