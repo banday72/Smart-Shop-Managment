@@ -31,16 +31,21 @@ export async function completeSale(input: unknown) {
   const productIds = [...new Set(parsed.data.items.map((item) => item.product_id))];
   const { data: products, error: productsError } = await context.supabase
     .from("products")
-    .select("id, name, is_active, current_stock")
-    .in("id", productIds)
-    .eq("shop_id", context.shopId);
+    .select("id, name, shop_id, is_active, current_stock")
+    .in("id", productIds);
   if (productsError) return { ok: false, message: productsError.message };
 
   const byId = new Map((products ?? []).map((product) => [product.id, product]));
   for (const item of parsed.data.items) {
     const product = byId.get(item.product_id);
-    if (!product || !product.is_active) {
-      return { ok: false, message: "Some cart items are no longer available. Refresh POS and try again." };
+    if (!product) {
+      return { ok: false, message: "Cart has an unavailable item. Refresh POS and add products again." };
+    }
+    if (product.shop_id !== context.shopId) {
+      return { ok: false, message: `${product.name} belongs to another shop. Refresh POS and try again.` };
+    }
+    if (!product.is_active) {
+      return { ok: false, message: `${product.name} is no longer active. Refresh POS and try again.` };
     }
     if (Number(product.current_stock) < item.quantity) {
       return { ok: false, message: `Insufficient stock for ${product.name}. Refresh POS and try again.` };
