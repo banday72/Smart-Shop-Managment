@@ -57,7 +57,7 @@ export function ProductForm({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-slate-900">{editing ? "Edit product" : "Add product"}</h2>
-          <p className="mt-1 text-sm text-slate-500">{editing ? "Update catalog details. Stock changes stay auditable through purchases and adjustments." : "Every SKU is unique within your shop."}</p>
+          <p className="mt-1 text-sm text-slate-500">{editing ? "Update catalog details and stock. Stock changes are recorded as adjustments." : "Every SKU is unique within your shop."}</p>
         </div>
         {editing && <Link href="/products" className="rounded-xl border px-3 py-2 text-sm font-semibold text-slate-600">Cancel</Link>}
       </div>
@@ -70,11 +70,7 @@ export function ProductForm({
         <SelectField name="supplierId" label="Supplier" options={suppliers} defaultValue={initial?.supplier_id ?? undefined} emptyLabel="No supplier" />
         <Field name="purchasePrice" label="Purchase price (PKR)" type="number" min="0" step="0.01" required defaultValue={initial ? String(initial.purchase_price) : undefined} />
         <Field name="sellingPrice" label="Selling price (PKR)" type="number" min="0" step="0.01" required defaultValue={initial ? String(initial.selling_price) : undefined} />
-        {editing ? (
-          <label className="block text-sm font-medium text-slate-700">Current stock<input value={`${initial?.current_stock ?? 0} units`} readOnly className="mt-1.5 w-full rounded-xl border bg-slate-50 px-3 py-2.5 text-sm text-slate-500" /></label>
-        ) : (
-          <Field name="currentStock" label="Opening stock (optional)" type="number" min="0" defaultValue="0" />
-        )}
+        <Field name="currentStock" label={editing ? "Current stock (units)" : "Opening stock (optional)"} type="number" min="0" step="1" defaultValue={editing ? String(initial?.current_stock ?? 0) : "0"} />
         <Field name="minimumStock" label="Minimum stock alert" type="number" min="0" required defaultValue={initial ? String(initial.minimum_stock) : undefined} />
       </div>
       {message && <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">{message}</p>}

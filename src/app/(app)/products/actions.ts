@@ -53,19 +53,42 @@ export async function saveProduct(formData: FormData): Promise<ActionResult> {
     minimum_stock: product.minimumStock,
     updated_at: new Date().toISOString(),
   };
-  // Opening stock is only set on creation. Later changes must go through
-  // purchases, sales, or adjust_stock so inventory movements stay auditable.
-  const query = product.id
-    ? context.supabase.from("products").update(payload).eq("id", product.id).eq("shop_id", context.shopId)
-    : context.supabase.from("products").insert({ ...payload, current_stock: product.currentStock ?? 0 });
-  const { error } = await query;
-  if (error) {
-    if (error.code === "23505") return { ok: false, message: "That SKU already exists in this shop." };
-    return { ok: false, message: error.message };
+  if (product.id) {
+    const { error } = await context.supabase.from("products").update(payload).eq("id", product.id).eq("shop_id", context.shopId);
+    if (error) {
+      if (error.code === "23505") return { ok: false, message: "That SKU already exists in this shop." };
+      return { ok: false, message: error.message };
+    }
+    if (product.currentStock !== undefined) {
+      const { data: existing, error: existingError } = await context.supabase
+        .from("products")
+        .select("current_stock")
+        .eq("id", product.id)
+        .eq("shop_id", context.shopId)
+        .maybeSingle();
+      if (existingError) return { ok: false, message: existingError.message };
+      const delta = Math.trunc(product.currentStock) - Number(existing?.current_stock ?? 0);
+      if (delta !== 0) {
+        const { error: adjustError } = await context.supabase.rpc("adjust_stock", {
+          p_product_id: product.id,
+          p_quantity: delta,
+          p_reason: "Stock updated via product edit",
+        });
+        if (adjustError) return { ok: false, message: adjustError.message };
+      }
+    }
+  } else {
+    const { error } = await context.supabase.from("products").insert({ ...payload, current_stock: product.currentStock ?? 0 });
+    if (error) {
+      if (error.code === "23505") return { ok: false, message: "That SKU already exists in this shop." };
+      return { ok: false, message: error.message };
+    }
   }
   revalidatePath("/products");
   revalidatePath("/dashboard");
   revalidatePath("/admin");
+  revalidatePath("/pos");
+  revalidatePath("/reports");
   return { ok: true, message: product.id ? "Product updated." : "Product added." };
 }
 
