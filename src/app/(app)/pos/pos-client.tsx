@@ -249,12 +249,14 @@ export function PosClient({ shopId, products, customers }: { shopId: string; pro
           <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addExactMatch(); } }} placeholder="Search name, SKU or scan barcode" className="w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm" />
           {query && (
             <div className="absolute z-10 mt-2 w-full rounded-xl border bg-white p-2 shadow-lg">
-              {matches.length ? matches.map((product) => (
-                <button key={product.id} onClick={() => add(product)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-50">
-                  <span><span className="block text-sm font-medium text-slate-800">{product.name}</span><span className="text-xs text-slate-400">{product.sku} · {product.current_stock} available</span></span>
+              {matches.length ? matches.map((product) => {
+                const inStock = Number(product.current_stock) > 0;
+                return (
+                <button key={product.id} onClick={() => add(product)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60" disabled={!inStock}>
+                  <span><span className="block text-sm font-medium text-slate-800">{product.name}</span><span className="text-xs text-slate-400">{product.sku} • {inStock ? `${product.current_stock} available` : "Out of stock"}</span></span>
                   <span className="text-sm font-semibold">{formatCurrency(Number(product.selling_price))}</span>
                 </button>
-              )) : <p className="px-3 py-4 text-sm text-slate-500">No products matched your search.</p>}
+              )}) : <p className="px-3 py-4 text-sm text-slate-500">No products matched your search.</p>}
             </div>
           )}
         </div>
