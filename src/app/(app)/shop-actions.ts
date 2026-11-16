@@ -55,3 +55,34 @@ export async function createShop(formData: FormData) {
   revalidatePath("/", "layout");
   redirect("/dashboard");
 }
+
+export async function deleteShop(formData: FormData) {
+  const context = await getShopContext();
+  if ("error" in context) return { ok: false, message: context.error };
+  const parsed = z.object({
+    shopId: z.string().uuid(),
+    confirmation: z.string().trim(),
+    expectedName: z.string().trim().min(1),
+  }).safeParse({
+    shopId: formData.get("shopId"),
+    confirmation: formData.get("confirmation"),
+    expectedName: formData.get("expectedName"),
+  });
+  if (!parsed.success) return { ok: false, message: "Invalid request." };
+  if (parsed.data.confirmation !== parsed.data.expectedName) {
+    return { ok: false, message: "Confirmation does not match the shop name." };
+  }
+
+  const { data: nextShopId, error } = await context.supabase.rpc("delete_shop", {
+    p_shop_id: parsed.data.shopId,
+  });
+  if (error) return { ok: false, message: error.message };
+
+  const activeId = typeof nextShopId === "string" ? nextShopId : null;
+  if (activeId) {
+    const { error: switchError } = await context.supabase.auth.updateUser({ data: { active_shop_id: activeId } });
+    if (switchError) return { ok: false, message: switchError.message };
+  }
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
+}
