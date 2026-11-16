@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getShopContext } from "@/lib/authz";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { ProductForm } from "./product-form";
-import { ArchiveProductButton } from "./product-actions";
+import { AdjustStockButton, ArchiveProductButton } from "./product-actions";
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   await io();
@@ -49,7 +49,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                       <td className="py-4 text-slate-500">{product.sku}</td>
                       <td className="py-4"><span className={Number(product.current_stock) <= Number(product.minimum_stock) ? "font-semibold text-amber-600" : "text-slate-600"}>{formatNumber(Number(product.current_stock))} units</span></td>
                       <td className="py-4 text-slate-500">{formatCurrency(Number(product.selling_price))}<span className="block text-xs text-slate-400">cost {formatCurrency(Number(product.purchase_price))}</span></td>
-                      <td className="py-4"><div className="flex items-center justify-end gap-3"><Link href={`/products?edit=${product.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"><Pencil className="h-3.5 w-3.5" />Edit</Link><ArchiveProductButton productId={product.id} /></div></td>
+                      <td className="py-4"><div className="flex flex-col items-end gap-2"><div className="flex items-center justify-end gap-3"><Link href={`/products?edit=${product.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"><Pencil className="h-3.5 w-3.5" />Edit</Link><AdjustStockButton productId={product.id} productName={product.name} currentStock={Number(product.current_stock)} /><ArchiveProductButton productId={product.id} /></div></div></td>
                     </tr>
                   )) : <tr><td colSpan={5} className="py-10 text-center text-slate-500">No active products yet. Add your first product above.</td></tr>}
                 </tbody>

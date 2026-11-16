@@ -84,3 +84,34 @@ export async function deleteProduct(productId: string): Promise<ActionResult> {
   revalidatePath("/dashboard");
   return { ok: true, message: "Product archived." };
 }
+
+const stockAdjustmentSchema = z.object({
+  productId: z.string().uuid(),
+  quantity: z.coerce.number().int().refine((value) => value !== 0, "Quantity change cannot be zero."),
+  reason: z.string().trim().min(3, "Reason must be at least 3 characters.").max(200),
+});
+
+export async function adjustProductStock(formData: FormData): Promise<ActionResult> {
+  const context = await getShopContext(["owner", "manager"]);
+  if ("error" in context) return { ok: false, message: context.error ?? "You do not have permission for this action." };
+
+  const parsed = stockAdjustmentSchema.safeParse({
+    productId: formData.get("productId"),
+    quantity: formData.get("quantity"),
+    reason: formData.get("reason"),
+  });
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid stock adjustment." };
+
+  const { error } = await context.supabase.rpc("adjust_stock", {
+    p_product_id: parsed.data.productId,
+    p_quantity: parsed.data.quantity,
+    p_reason: parsed.data.reason,
+  });
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/products");
+  revalidatePath("/dashboard");
+  revalidatePath("/pos");
+  revalidatePath("/reports");
+  return { ok: true, message: "Stock updated." };
+}
