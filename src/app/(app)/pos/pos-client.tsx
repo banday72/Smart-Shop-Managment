@@ -57,12 +57,25 @@ export function PosClient({ shopId, products, customers }: { shopId: string; pro
     [availableProducts],
   );
   const normalizedQuery = query.trim().toLowerCase();
-  const matches = useMemo(
-    () => normalizedQuery
-      ? searchableProducts.filter(({ searchText }) => searchText.includes(normalizedQuery)).slice(0, 8).map(({ product }) => product)
-      : [],
-    [normalizedQuery, searchableProducts],
-  );
+  const matches = useMemo(() => {
+    if (!normalizedQuery) return [];
+    return searchableProducts
+      .map(({ product, searchText }) => {
+        const name = product.name.toLowerCase();
+        const sku = product.sku.toLowerCase();
+        const barcode = (product.barcode ?? "").toLowerCase();
+        let score = 0;
+        if (sku === normalizedQuery || barcode === normalizedQuery || name === normalizedQuery) score = 4;
+        else if (sku.startsWith(normalizedQuery) || barcode.startsWith(normalizedQuery) || name.startsWith(normalizedQuery)) score = 3;
+        else if (name.includes(normalizedQuery)) score = 2;
+        else if (searchText.includes(normalizedQuery)) score = 1;
+        return { product, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score || a.product.name.localeCompare(b.product.name))
+      .slice(0, 20)
+      .map(({ product }) => product);
+  }, [normalizedQuery, searchableProducts]);
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + Number(item.selling_price) * item.quantity, 0), [cart]);
   const total = Math.max(0, subtotal - discount + tax);
   const canWorkOffline = paymentMethod === "cash" && paymentStatus === "paid" && !customerId;
