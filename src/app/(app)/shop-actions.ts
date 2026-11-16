@@ -21,6 +21,7 @@ export async function switchShop(formData: FormData) {
 
   const { error } = await context.supabase.auth.updateUser({ data: { active_shop_id: parsed.data } });
   if (error) return { ok: false, message: error.message };
+  await context.supabase.auth.refreshSession();
   revalidatePath("/", "layout");
   redirect("/dashboard");
 }
@@ -82,6 +83,7 @@ export async function deleteShop(formData: FormData) {
   if (activeId) {
     const { error: switchError } = await context.supabase.auth.updateUser({ data: { active_shop_id: activeId } });
     if (switchError) return { ok: false, message: switchError.message };
+    await context.supabase.auth.refreshSession();
   }
   revalidatePath("/", "layout");
   redirect("/dashboard");

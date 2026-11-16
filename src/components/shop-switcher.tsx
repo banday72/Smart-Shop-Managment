@@ -12,11 +12,13 @@ export function ShopSwitcher({ shops, activeShopId }: { shops: ShopOption[]; act
         <Building2 className="h-3.5 w-3.5" />Current shop
       </div>
       <form action={async (formData) => {
+        const shopId = String(formData.get("shopId") ?? "");
+        if (!shopId || shopId === activeShopId) return;
         const result = await switchShop(formData);
-        if (!result.ok) window.alert(result.message);
+        if (result && !result.ok) window.alert(result.message);
       }}>
-        <select name="shopId" defaultValue={activeShopId} onChange={(event) => event.currentTarget.form?.requestSubmit()} className="w-full rounded-xl border-white/10 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white">
-          {shops.map((shop) => <option key={shop.id} value={shop.id} className="text-slate-900">{shop.name} · {shop.role}</option>)}
+        <select key={activeShopId} name="shopId" defaultValue={activeShopId} onChange={(event) => event.currentTarget.form?.requestSubmit()} className="w-full rounded-xl border-white/10 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white">
+          {shops.map((shop) => <option key={shop.id} value={shop.id} className="text-slate-900">{shop.name} • {shop.role}</option>)}
         </select>
       </form>
       <a href="/shops/new" className="mt-2 flex items-center gap-2 px-1 text-xs font-semibold text-amber-200 hover:text-amber-100">
