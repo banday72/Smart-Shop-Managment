@@ -85,7 +85,14 @@ export function PosClient({ shopId, products, customers }: { shopId: string; pro
         break;
       }
       if (!result.ok) {
-        setMessage(`Offline sale ${sale.invoiceNumber} is waiting: ${result.message ?? "Sync failed."}`);
+        const message = result.message ?? "Sync failed.";
+        const unavailable = /no longer available|product not found/i.test(message);
+        if (unavailable) {
+          await removeQueuedSale(shopId, sale.id);
+          setMessage(`Offline sale ${sale.invoiceNumber} was removed because an item is unavailable. ${message}`);
+          continue;
+        }
+        setMessage(`Offline sale ${sale.invoiceNumber} is waiting: ${message}`);
         break;
       }
       await removeQueuedSale(shopId, sale.id);
@@ -210,8 +217,20 @@ export function PosClient({ shopId, products, customers }: { shopId: string; pro
     }
     if (!result.ok) {
       if (result.message !== "offline" && result.message !== "Network unavailable.") {
-        setMessage(result.message ?? "The sale could not be completed.");
-        toast.error(result.message ?? "The sale could not be completed.");
+        const msg = result.message ?? "The sale could not be completed.";
+        if (/no longer available|product not found/i.test(msg)) {
+          setCart([]);
+          try {
+            const refreshed = await readCachedProducts(shopId);
+            if (refreshed.length) setAvailableProducts(refreshed as Product[]);
+          } catch {
+            /* ignore */
+          }
+          setMessage(`${msg} Cart was cleared so you can rescan products.`);
+        } else {
+          setMessage(msg);
+        }
+        toast.error(msg);
         setBusy(false);
         return;
       }

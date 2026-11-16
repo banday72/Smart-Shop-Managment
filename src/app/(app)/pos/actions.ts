@@ -28,6 +28,25 @@ export async function completeSale(input: unknown) {
   const parsed = saleSchema.safeParse(input);
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid sale." };
 
+  const productIds = [...new Set(parsed.data.items.map((item) => item.product_id))];
+  const { data: products, error: productsError } = await context.supabase
+    .from("products")
+    .select("id, name, is_active, current_stock")
+    .in("id", productIds)
+    .eq("shop_id", context.shopId);
+  if (productsError) return { ok: false, message: productsError.message };
+
+  const byId = new Map((products ?? []).map((product) => [product.id, product]));
+  for (const item of parsed.data.items) {
+    const product = byId.get(item.product_id);
+    if (!product || !product.is_active) {
+      return { ok: false, message: "Some cart items are no longer available. Refresh POS and try again." };
+    }
+    if (Number(product.current_stock) < item.quantity) {
+      return { ok: false, message: `Insufficient stock for ${product.name}. Refresh POS and try again.` };
+    }
+  }
+
   const { data, error } = await context.supabase.rpc("complete_sale", {
     p_invoice_number: parsed.data.invoiceNumber,
     p_discount: parsed.data.discount,
