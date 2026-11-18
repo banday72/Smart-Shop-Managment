@@ -1,10 +1,32 @@
 ﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Paperclip, X, FileText, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-type Msg = { id: string; sender_id: string; recipient_id: string; body: string; created_at: string };
+type Msg = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string | null;
+  created_at: string;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
+  attachment_size: number | null;
+};
 type Member = { user_id: string; full_name: string; role: string };
+
+function safeName(name: string) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+function formatSize(size: number | null) {
+  if (!size || size < 0) return "";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function DirectMessages({
   shopId,
@@ -22,9 +44,12 @@ export function DirectMessages({
   const [selectedId, setSelectedId] = useState<string | null>(others[0]?.user_id ?? null);
   const [messages, setMessages] = useState<Msg[]>(initialMessages);
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [urls, setUrls] = useState<Record<string, string>>({});
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const thread = messages.filter(
     (m) =>
@@ -55,23 +80,73 @@ export function DirectMessages({
     };
   }, [shopId, userId, supabase]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const needed = messages.filter((m) => m.attachment_path && !urls[m.id]);
+    if (!needed.length) return;
+    (async () => {
+      const entries = await Promise.all(
+        needed.map(async (m) => {
+          const { data } = await supabase.storage.from("chat-attachments").createSignedUrl(m.attachment_path!, 3600);
+          return [m.id, data?.signedUrl ?? ""] as const;
+        }),
+      );
+      if (cancelled) return;
+      setUrls((prev) => {
+        const next = { ...prev };
+        for (const [id, url] of entries) if (url) next[id] = url;
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, supabase, urls]);
+
   async function send(e: FormEvent) {
     e.preventDefault();
     const body = text.trim();
-    if (!body || !selectedId || sending) return;
+    if ((!body && !file) || !selectedId || sending) return;
+    if (file && file.size > 10 * 1024 * 1024) {
+      setError("File is too large (max 10 MB).");
+      return;
+    }
     setSending(true);
     setError("");
-    const { data, error: insertError } = await supabase
-      .from("direct_messages")
-      .insert({ shop_id: shopId, sender_id: userId, recipient_id: selectedId, body })
-      .select("id,sender_id,recipient_id,body,created_at")
-      .single();
-    if (insertError) setError(insertError.message);
-    else if (data) {
-      setText("");
-      setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data as Msg]));
+    try {
+      let attachment: { path: string; name: string; type: string; size: number } | null = null;
+      if (file) {
+        const path = `${shopId}/${userId}/${crypto.randomUUID()}-${safeName(file.name)}`;
+        const { error: upErr } = await supabase.storage.from("chat-attachments").upload(path, file, { upsert: false });
+        if (upErr) throw upErr;
+        attachment = { path, name: file.name, type: file.type || "application/octet-stream", size: file.size };
+      }
+      const { data, error: insertError } = await supabase
+        .from("direct_messages")
+        .insert({
+          shop_id: shopId,
+          sender_id: userId,
+          recipient_id: selectedId,
+          body: body || null,
+          attachment_path: attachment?.path ?? null,
+          attachment_name: attachment?.name ?? null,
+          attachment_type: attachment?.type ?? null,
+          attachment_size: attachment?.size ?? null,
+        })
+        .select("id,sender_id,recipient_id,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size")
+        .single();
+      if (insertError) throw insertError;
+      if (data) {
+        setText("");
+        setFile(null);
+        if (fileRef.current) fileRef.current.value = "";
+        setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data as Msg]));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send message.");
+    } finally {
+      setSending(false);
     }
-    setSending(false);
   }
 
   const nameFor = (id: string) => members.find((m) => m.user_id === id)?.full_name || "Team member";
@@ -83,7 +158,7 @@ export function DirectMessages({
           <p className="eyebrow">Direct messages</p>
           <h2 className="mt-1 text-lg font-semibold text-slate-950">Team members</h2>
         </div>
-        <div className="max-h-48 overflow-y-auto md:max-h-none md:h-[calc(100%-73px)]">
+        <div className="max-h-48 overflow-y-auto md:h-[calc(100%-73px)] md:max-h-none">
           {others.length ? (
             others.map((m) => {
               const active = m.user_id === selectedId;
@@ -92,6 +167,7 @@ export function DirectMessages({
                   (x.sender_id === userId && x.recipient_id === m.user_id) ||
                   (x.sender_id === m.user_id && x.recipient_id === userId),
               );
+              const preview = last ? (last.body?.trim() || (last.attachment_name ? `📎 ${last.attachment_name}` : "")) : m.role;
               return (
                 <button
                   key={m.user_id}
@@ -100,7 +176,7 @@ export function DirectMessages({
                   className={`w-full border-b px-4 py-3 text-left transition ${active ? "bg-amber-50" : "hover:bg-slate-50"}`}
                 >
                   <p className="truncate text-sm font-semibold text-slate-800">{m.full_name || "Team member"}</p>
-                  <p className="truncate text-xs text-slate-500">{last ? last.body : m.role}</p>
+                  <p className="truncate text-xs text-slate-500">{preview}</p>
                 </button>
               );
             })
@@ -120,10 +196,30 @@ export function DirectMessages({
               {thread.length ? (
                 thread.map((m) => {
                   const mine = m.sender_id === userId;
+                  const url = urls[m.id];
+                  const isImage = m.attachment_type?.startsWith("image/");
                   return (
                     <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${mine ? "bg-[#0b1220] text-white" : "bg-slate-100 text-slate-800"}`}>
-                        <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p>
+                        {m.body?.trim() ? <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p> : null}
+                        {m.attachment_path ? (
+                          url ? (
+                            isImage ? (
+                              <a href={url} target="_blank" rel="noreferrer" className="mt-2 block overflow-hidden rounded-xl">
+                                <img src={url} alt={m.attachment_name || "Attachment"} className="max-h-56 w-auto max-w-full rounded-xl object-cover" />
+                              </a>
+                            ) : (
+                              <a href={url} target="_blank" rel="noreferrer" className={`mt-2 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${mine ? "border-white/20 hover:bg-white/10" : "border-slate-200 hover:bg-white"}`}>
+                                <FileText className="h-4 w-4 shrink-0" />
+                                <span className="min-w-0 flex-1 truncate">{m.attachment_name || "Attachment"}</span>
+                                <span className={`text-xs ${mine ? "text-slate-300" : "text-slate-500"}`}>{formatSize(m.attachment_size)}</span>
+                                <Download className="h-4 w-4 shrink-0" />
+                              </a>
+                            )
+                          ) : (
+                            <p className={`mt-2 text-xs ${mine ? "text-slate-300" : "text-slate-500"}`}>Loading attachment...</p>
+                          )
+                        ) : null}
                         <p className={`mt-1 text-[10px] ${mine ? "text-slate-300" : "text-slate-400"}`}>{new Date(m.created_at).toLocaleString("en-PK")}</p>
                       </div>
                     </div>
@@ -136,15 +232,24 @@ export function DirectMessages({
             </div>
             <form onSubmit={send} className="border-t p-4">
               {error && <p className="mb-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
-              <div className="flex gap-2">
-                <input
+              {file && (
+                <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm">
+                  <span className="truncate text-slate-700">{file.name} <span className="text-slate-400">({formatSize(file.size)})</span></span>
+                  <button type="button" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ""; }} className="rounded p-1 text-slate-500 hover:bg-slate-200"><X className="h-4 w-4" /></button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <input ref={fileRef} type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <button type="button" onClick={() => fileRef.current?.click()} className="rounded-xl border p-2.5 text-slate-600 hover:bg-slate-50" title="Attach file"><Paperclip className="h-5 w-5" /></button>
+                <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   maxLength={2000}
+                  rows={1}
                   placeholder={`Message ${nameFor(selectedId)}...`}
-                  className="flex-1 rounded-xl border px-3 py-2.5 text-sm"
+                  className="flex-1 resize-none rounded-xl border px-3 py-2.5 text-sm"
                 />
-                <button disabled={sending || !text.trim()} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+                <button disabled={sending || (!text.trim() && !file)} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
                   {sending ? "Sending..." : "Send"}
                 </button>
               </div>
