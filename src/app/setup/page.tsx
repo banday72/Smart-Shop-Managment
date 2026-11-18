@@ -1,11 +1,24 @@
-import { io } from "next/cache";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUserContext } from "@/lib/authz";
 import { CreateShopForm } from "../(app)/shops/new/shop-form";
 
-export default async function SetupPage() {
-  await io();
+export default function SetupPage() {
+  return (
+    <Suspense fallback={<SetupFallback />}>
+      <SetupContent />
+    </Suspense>
+  );
+}
+
+function SetupFallback() {
+  return <main className="flex min-h-screen items-center justify-center bg-[#f7f8fb] px-5 py-12 text-sm text-slate-500">Loading setup...</main>;
+}
+
+async function SetupContent() {
+  await connection();
   const user = await getUserContext();
   if ("error" in user) redirect("/login");
 
