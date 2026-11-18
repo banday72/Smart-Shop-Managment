@@ -13,6 +13,7 @@ import {
   History,
   LayoutDashboard,
   Menu,
+  MessageSquare,
   PackageSearch,
   Settings,
   ShoppingCart,
@@ -35,6 +36,7 @@ const primaryNavigation = [
 ];
 
 const businessNavigation = [
+  { label: "Messages", href: "/messages", icon: MessageSquare },
   { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Expenses", href: "/expenses", icon: CircleDollarSign },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -55,6 +57,7 @@ const routeMeta: { href: string; title: string; description: string; action?: "e
   { href: "/admin", title: "Team access", description: "Review access requests, manage roles, and keep categories tidy." },
   { href: "/admin/audit", title: "Audit log", description: "Review sensitive changes made in your shop." },
   { href: "/orders", title: "Online orders", description: "Review and confirm customer orders." },
+  { href: "/messages", title: "Messages", description: "Chat with other signed-in members of your shop." },
   { href: "/store", title: "Customer store", description: "Share your shop's online product catalogue." },
 ];
 
