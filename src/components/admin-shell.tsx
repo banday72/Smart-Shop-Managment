@@ -75,12 +75,14 @@ export function AdminShell({
   adminNav,
   sidebarStoreLink,
   headerStoreLink,
+  messagesBadge,
 }: {
   children: React.ReactNode;
   account: React.ReactNode;
   adminNav: React.ReactNode;
   sidebarStoreLink: React.ReactNode;
   headerStoreLink: React.ReactNode;
+  messagesBadge?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -98,7 +100,7 @@ export function AdminShell({
         </div>
         <div className="mt-10 flex-1 space-y-7 overflow-y-auto">
           <NavGroup label="Workspace" items={primaryNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
-          <NavGroup label="Business" items={businessNavigation} pathname={pathname} close={() => setMobileOpen(false)} />
+          <NavGroup label="Business" items={businessNavigation} pathname={pathname} close={() => setMobileOpen(false)} messagesBadge={messagesBadge} />
           {adminNav}
           {sidebarStoreLink}
         </div>
@@ -128,6 +130,6 @@ export function AdminShell({
   );
 }
 
-function NavGroup({ label, items, pathname, close }: { label: string; items: { label: string; href: string; icon: typeof LayoutDashboard }[]; pathname: string; close: () => void }) {
-  return <div><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p><nav className="space-y-1">{items.map(({ label: itemLabel, href, icon: Icon }) => { const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`)); return <Link key={href} href={href} prefetch={true} onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${active ? "bg-amber-300 text-[#0b1220] shadow-lg shadow-amber-500/10" : "text-slate-300 hover:bg-white/8 hover:text-white"}`}><Icon className="h-4 w-4" />{itemLabel}</Link>; })}</nav></div>;
+function NavGroup({ label, items, pathname, close, messagesBadge }: { label: string; items: { label: string; href: string; icon: typeof LayoutDashboard }[]; pathname: string; close: () => void; messagesBadge?: React.ReactNode }) {
+  return <div><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p><nav className="space-y-1">{items.map(({ label: itemLabel, href, icon: Icon }) => { const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`)); return <Link key={href} href={href} prefetch={true} onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${active ? "bg-amber-300 text-[#0b1220] shadow-lg shadow-amber-500/10" : "text-slate-300 hover:bg-white/8 hover:text-white"}`}><Icon className="h-4 w-4" /><span className="flex-1">{itemLabel}</span>{href === "/messages" ? messagesBadge : null}</Link>; })}</nav></div>;
 }

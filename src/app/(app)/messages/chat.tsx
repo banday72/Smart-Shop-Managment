@@ -1,7 +1,8 @@
 ﻿"use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Paperclip, X, FileText, Download } from "lucide-react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
 type Msg = {
@@ -10,6 +11,7 @@ type Msg = {
   recipient_id: string;
   body: string | null;
   created_at: string;
+  read_at: string | null;
   attachment_path: string | null;
   attachment_name: string | null;
   attachment_type: string | null;
@@ -51,16 +53,37 @@ export function DirectMessages({
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const thread = messages.filter(
-    (m) =>
-      selectedId &&
-      ((m.sender_id === userId && m.recipient_id === selectedId) ||
-        (m.sender_id === selectedId && m.recipient_id === userId)),
+  const nameFor = useCallback((id: string) => members.find((m) => m.user_id === id)?.full_name || "Team member", [members]);
+
+  const thread = useMemo(
+    () =>
+      messages.filter(
+        (m) =>
+          selectedId &&
+          ((m.sender_id === userId && m.recipient_id === selectedId) ||
+            (m.sender_id === selectedId && m.recipient_id === userId)),
+      ),
+    [messages, selectedId, userId],
   );
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [thread.length, selectedId]);
+
+  const markRead = useCallback(async () => {
+    if (!selectedId) return;
+    const unreadIds = messages
+      .filter((m) => m.sender_id === selectedId && m.recipient_id === userId && !m.read_at)
+      .map((m) => m.id);
+    if (!unreadIds.length) return;
+    const now = new Date().toISOString();
+    const { error: upErr } = await supabase.from("direct_messages").update({ read_at: now }).in("id", unreadIds);
+    if (!upErr) window.dispatchEvent(new Event("direct-messages-read"));
+  }, [messages, selectedId, supabase, userId]);
+
+  useEffect(() => {
+    void markRead();
+  }, [markRead]);
 
   useEffect(() => {
     const channel = supabase
@@ -72,6 +95,15 @@ export function DirectMessages({
           const msg = payload.new as Msg;
           if (msg.sender_id !== userId && msg.recipient_id !== userId) return;
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "direct_messages", filter: `shop_id=eq.${shopId}` },
+        (payload) => {
+          const msg = payload.new as Msg;
+          if (msg.sender_id !== userId && msg.recipient_id !== userId) return;
+          setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, ...msg } : m)));
         },
       )
       .subscribe();
@@ -133,7 +165,7 @@ export function DirectMessages({
           attachment_type: attachment?.type ?? null,
           attachment_size: attachment?.size ?? null,
         })
-        .select("id,sender_id,recipient_id,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size")
+        .select("id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size")
         .single();
       if (insertError) throw insertError;
       if (data) {
@@ -141,15 +173,16 @@ export function DirectMessages({
         setFile(null);
         if (fileRef.current) fileRef.current.value = "";
         setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data as Msg]));
+        toast.success("Message sent");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send message.");
+        const message = err instanceof Error ? err.message : "Could not send message.";
+        setError(message);
+        toast.error(message);
     } finally {
       setSending(false);
     }
   }
-
-  const nameFor = (id: string) => members.find((m) => m.user_id === id)?.full_name || "Team member";
 
   return (
     <div className="grid h-[calc(100vh-13rem)] min-h-[420px] grid-cols-1 overflow-hidden rounded-3xl border bg-white shadow-sm md:grid-cols-[280px_1fr]">
@@ -162,12 +195,14 @@ export function DirectMessages({
           {others.length ? (
             others.map((m) => {
               const active = m.user_id === selectedId;
-              const last = [...messages].reverse().find(
+              const pair = messages.filter(
                 (x) =>
                   (x.sender_id === userId && x.recipient_id === m.user_id) ||
                   (x.sender_id === m.user_id && x.recipient_id === userId),
               );
-              const preview = last ? (last.body?.trim() || (last.attachment_name ? `📎 ${last.attachment_name}` : "")) : m.role;
+              const last = pair[pair.length - 1];
+              const unread = pair.filter((x) => x.sender_id === m.user_id && x.recipient_id === userId && !x.read_at).length;
+              const preview = last ? (last.body?.trim() || (last.attachment_name ? `Attachment: ${last.attachment_name}` : "")) : m.role;
               return (
                 <button
                   key={m.user_id}
@@ -175,7 +210,10 @@ export function DirectMessages({
                   onClick={() => setSelectedId(m.user_id)}
                   className={`w-full border-b px-4 py-3 text-left transition ${active ? "bg-amber-50" : "hover:bg-slate-50"}`}
                 >
-                  <p className="truncate text-sm font-semibold text-slate-800">{m.full_name || "Team member"}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-semibold text-slate-800">{m.full_name || "Team member"}</p>
+                    {unread > 0 && <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-[#0b1220]">{unread}</span>}
+                  </div>
                   <p className="truncate text-xs text-slate-500">{preview}</p>
                 </button>
               );
