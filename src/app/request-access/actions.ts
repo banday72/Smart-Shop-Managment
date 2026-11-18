@@ -9,7 +9,7 @@ export async function requestShopAccess(formData: FormData) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { ok: false, message: "Please sign in first." };
   const parsed = z.object({
-    shopId: z.string().uuid(),
+    shopId: z.string().trim().uuid(),
     fullName: z.string().trim().min(2).max(120),
   }).safeParse({ shopId: formData.get("shopId"), fullName: formData.get("fullName") });
   if (!parsed.success) return { ok: false, message: "Enter a valid shop ID and your name." };
@@ -19,7 +19,11 @@ export async function requestShopAccess(formData: FormData) {
     full_name: parsed.data.fullName,
     email: auth.user.email ?? "",
   });
-  if (error) return { ok: false, message: error.code === "23505" ? "You already sent a request for this shop." : error.message };
+  if (error) {
+    if (error.code === "23505") return { ok: false, message: "You already sent a request for this shop." };
+    if (error.code === "23503") return { ok: false, message: "Shop not found for that Shop ID. Ask the owner to copy the Shop ID from Settings." };
+    return { ok: false, message: error.message };
+  }
   revalidatePath("/request-access");
   return { ok: true, message: "Request sent. Ask the owner or manager to approve it." };
 }
