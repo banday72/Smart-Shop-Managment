@@ -24,7 +24,7 @@ export default function RequestAccessPage() {
         <form onSubmit={submit} className="rounded-3xl border bg-white p-7 shadow-xl">
           <p className="eyebrow">Banday Mart</p>
           <h1 className="mt-2 text-2xl font-semibold">Request shop access</h1>
-          <p className="mt-2 text-sm text-slate-500">Ask the shop owner for their shop ID, then send this request. An owner or manager will approve it.</p>
+          <p className="mt-2 text-sm text-slate-500">Ask the shop owner for their shop ID (Settings in their shop), then send this request. An owner or manager will approve it — after approval, sign in again or refresh to access the shop.</p>
           <div className="mt-6 space-y-4">
             <label className="block text-sm font-medium">Your name<input required name="fullName" className="mt-1.5 w-full rounded-xl border px-3 py-3" /></label>
             <label className="block text-sm font-medium">Shop ID<input required name="shopId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="mt-1.5 w-full rounded-xl border px-3 py-3" /></label>

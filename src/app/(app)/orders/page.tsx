@@ -19,7 +19,7 @@ type OnlineOrder = {
 export default async function OrdersPage() {
   await io();
   const context = await getShopContext(["owner", "manager", "cashier"]);
-  if ("error" in context) redirect("/dashboard");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/dashboard");
   const { data: orders } = await context.supabase
     .from("online_orders")
     .select("id,order_number,customer_name,customer_phone,customer_address,status,subtotal,created_at,online_order_items(product_name,quantity,unit_price,line_total)")

@@ -35,14 +35,18 @@ const emptyStats: DashboardStats = {
 export async function getDashboardStats(): Promise<{
   configured: boolean;
   authenticated: boolean;
+  needsSetup: boolean;
   fullName: string;
   role: string;
   stats: DashboardStats;
 }> {
   const context = await getShopContext();
   if ("error" in context) {
+    if ("noShop" in context) {
+      return { configured: true, authenticated: true, needsSetup: true, fullName: "", role: "", stats: emptyStats };
+    }
     const configured = context.error !== "Supabase is not configured.";
-    return { configured, authenticated: false, fullName: "", role: "", stats: emptyStats };
+    return { configured, authenticated: false, needsSetup: false, fullName: "", role: "", stats: emptyStats };
   }
 
   const { supabase, fullName, role } = context;
@@ -95,6 +99,7 @@ export async function getDashboardStats(): Promise<{
   return {
     configured: true,
     authenticated: true,
+    needsSetup: false,
     fullName,
     role,
     stats: {

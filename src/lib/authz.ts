@@ -1,13 +1,22 @@
 import { cache } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
-const loadShopContext = cache(async () => {
+export async function getUserContext() {
   if (!isSupabaseConfigured()) return { error: "Supabase is not configured." } as const;
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
   if (!userId) return { error: "You must be signed in." } as const;
-  const activeShopId = typeof claims.claims.user_metadata?.active_shop_id === "string"
+  const fullName = typeof claims.claims.user_metadata?.full_name === "string" ? claims.claims.user_metadata.full_name : "";
+  return { supabase, userId, fullName } as const;
+}
+
+const loadShopContext = cache(async () => {
+  const user = await getUserContext();
+  if ("error" in user) return user;
+  const { supabase, userId } = user;
+  const { data: claims } = await supabase.auth.getClaims();
+  const activeShopId = typeof claims?.claims?.user_metadata?.active_shop_id === "string"
     ? claims.claims.user_metadata.active_shop_id
     : undefined;
   const { data: memberships } = await supabase
@@ -16,7 +25,7 @@ const loadShopContext = cache(async () => {
     .eq("user_id", userId)
     .order("created_at");
   const membership = memberships?.find((entry) => entry.shop_id === activeShopId) ?? memberships?.[0];
-  if (!membership) return { error: "Your account is not linked to a shop." } as const;
+  if (!membership) return { error: "Your account is not linked to a shop.", noShop: true, userId } as const;
   return {
     supabase,
     userId,

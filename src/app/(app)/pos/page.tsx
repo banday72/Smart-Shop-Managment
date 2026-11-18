@@ -6,7 +6,7 @@ import { PosClient } from "./pos-client";
 export default async function PosPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
   const [{ data: products }, { data: customers }] = await Promise.all([
     supabase.from("products").select("id, name, sku, barcode, selling_price, current_stock").eq("is_active", true).order("name"),

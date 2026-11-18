@@ -14,7 +14,7 @@ type ReturnItemRow = {
 export default async function ReturnsPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
   const start = new Date();
   start.setDate(start.getDate() - 90);

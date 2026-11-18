@@ -6,7 +6,7 @@ import { AddCategoryForm, ApproveRequestForm, ChangeRoleForm, RejectRequestForm 
 export default async function ShopPage() {
   await io();
   const context = await getShopContext(["owner", "manager"]);
-  if ("error" in context) redirect("/dashboard");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/dashboard");
   const { supabase, shopId, userId, role } = context;
 
   const [{ data: shop }, { data: team }, { data: requests }, { data: categories }] = await Promise.all([

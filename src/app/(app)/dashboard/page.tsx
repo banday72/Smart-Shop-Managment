@@ -21,6 +21,7 @@ export default async function DashboardPage() {
   await io();
   const result = await getDashboardStats();
   if (result.configured && !result.authenticated) redirect("/login");
+  if (result.needsSetup) redirect("/setup");
   const { stats } = result;
   const greetingName = result.fullName || result.role || "owner";
   const today = new Intl.DateTimeFormat("en-PK", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());

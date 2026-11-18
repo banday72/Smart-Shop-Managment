@@ -6,7 +6,7 @@ import { createCustomer, recordCustomerPayment } from "./actions";
 export default async function CustomersPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
   const [{ data: customers }, { data: customerSales }, { data: customerPayments }] = await Promise.all([
     supabase.from("customers").select("id,name,phone,email,credit_limit").order("name"),

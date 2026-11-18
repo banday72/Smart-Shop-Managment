@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 export default async function ReportsPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
   const start = new Date(); start.setDate(start.getDate() - 30);
   const [{ data: sales }, { data: purchases }, { data: expenses }] = await Promise.all([

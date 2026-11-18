@@ -10,7 +10,7 @@ import { AdjustStockButton, ArchiveProductButton } from "./product-actions";
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
 
   const { edit } = await searchParams;

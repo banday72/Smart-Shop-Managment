@@ -6,7 +6,7 @@ import { createSupplier } from "./actions";
 export default async function SuppliersPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
   const { data: suppliers } = await supabase.from("suppliers").select("id,name,phone,email,address").order("name");
   async function submit(formData: FormData) { "use server"; await createSupplier(formData); }

@@ -42,7 +42,7 @@ export default async function SalesHistoryPage({
 }) {
   await io();
   const context = await getShopContext(["owner", "manager", "cashier"]);
-  if ("error" in context) redirect("/dashboard");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/dashboard");
   const { supabase, shopId } = context;
 
   const { from, to, q } = await searchParams;

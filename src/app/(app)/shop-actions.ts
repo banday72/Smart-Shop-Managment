@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getShopContext } from "@/lib/authz";
+import { getShopContext, getUserContext } from "@/lib/authz";
 
 export async function switchShop(formData: FormData) {
   const context = await getShopContext();
@@ -27,8 +27,8 @@ export async function switchShop(formData: FormData) {
 }
 
 export async function createShop(formData: FormData) {
-  const context = await getShopContext();
-  if ("error" in context) return { ok: false, message: context.error };
+  const user = await getUserContext();
+  if ("error" in user) return { ok: false, message: user.error };
   const parsed = z.object({
     name: z.string().trim().min(2).max(120),
     address: z.string().trim().max(240).optional(),
@@ -43,16 +43,17 @@ export async function createShop(formData: FormData) {
     fullName: formData.get("fullName") || undefined,
   });
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid shop details." };
-  const { data: shopId, error } = await context.supabase.rpc("create_shop", {
+  const { data: shopId, error } = await user.supabase.rpc("create_shop", {
     p_name: parsed.data.name,
     p_address: parsed.data.address ?? null,
     p_phone: parsed.data.phone ?? null,
     p_currency: parsed.data.currency,
-    p_full_name: parsed.data.fullName ?? context.fullName,
+    p_full_name: parsed.data.fullName ?? user.fullName ?? "",
   });
   if (error || !shopId) return { ok: false, message: error?.message ?? "Could not create shop." };
-  const { error: switchError } = await context.supabase.auth.updateUser({ data: { active_shop_id: shopId } });
+  const { error: switchError } = await user.supabase.auth.updateUser({ data: { active_shop_id: shopId } });
   if (switchError) return { ok: false, message: switchError.message };
+  await user.supabase.auth.refreshSession();
   revalidatePath("/", "layout");
   redirect("/dashboard");
 }

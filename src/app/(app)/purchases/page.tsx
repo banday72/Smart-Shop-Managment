@@ -8,7 +8,7 @@ import { PurchaseForm } from "./purchase-form";
 export default async function PurchasesPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   const { supabase } = context;
 
   const [{ data: purchases }, { data: products }, { data: suppliers }] = await Promise.all([

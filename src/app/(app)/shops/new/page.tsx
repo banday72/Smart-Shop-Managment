@@ -6,7 +6,7 @@ import { CreateShopForm } from "./shop-form";
 export default async function NewShopPage() {
   await io();
   const context = await getShopContext();
-  if ("error" in context) redirect("/login");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/login");
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">

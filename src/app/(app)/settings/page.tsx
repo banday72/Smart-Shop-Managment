@@ -6,7 +6,7 @@ import { SettingsForm } from "./settings-form";
 export default async function SettingsPage() {
   await io();
   const context = await getShopContext(["owner"]);
-  if ("error" in context) redirect("/dashboard");
+  if ("error" in context) redirect("noShop" in context ? "/setup" : "/dashboard");
   const { supabase, shopId } = context;
 
   const [{ data: shop }, { data: settings }] = await Promise.all([
