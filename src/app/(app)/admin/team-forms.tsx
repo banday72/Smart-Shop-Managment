@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { approveAccessRequest, createCategory, rejectAccessRequest, updateProfileRole } from "./actions";
+import { approveAccessRequest, createCategory, rejectAccessRequest, resetMemberPassword, updateProfileRole } from "./actions";
 
 export function ApproveRequestForm({ requestId, requestedRole }: { requestId: string; requestedRole: string }) {
   const [busy, setBusy] = useState(false);
@@ -83,6 +83,29 @@ export function ChangeRoleForm({ profileId, role }: { profileId: string; role: s
       </select>
       <button disabled={busy} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-60">
         {busy ? "Updating..." : "Update"}
+      </button>
+    </form>
+  );
+}
+
+export function ResetMemberPasswordForm({ userId }: { userId: string }) {
+  const [busy, setBusy] = useState(false);
+
+  async function submit(formData: FormData) {
+    setBusy(true);
+    const result = await resetMemberPassword(formData);
+    const message = result.message ?? "The password could not be reset.";
+    if (result.ok) toast.success(message);
+    else toast.error(message);
+    setBusy(false);
+  }
+
+  return (
+    <form action={submit} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="userId" value={userId} />
+      <input name="password" type="password" required minLength={6} placeholder="New password" className="w-40 rounded-lg border px-2 py-1.5 text-sm" />
+      <button disabled={busy} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-60">
+        {busy ? "Resetting..." : "Reset password"}
       </button>
     </form>
   );

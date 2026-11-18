@@ -5,9 +5,9 @@ import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
   await io();
-  const context = await getShopContext(["owner"]);
+  const context = await getShopContext();
   if ("error" in context) redirect("noShop" in context ? "/setup" : "/dashboard");
-  const { supabase, shopId } = context;
+  const { supabase, shopId, role } = context;
 
   const [{ data: shop }, { data: settings }] = await Promise.all([
     supabase.from("shops").select("name,address,phone,currency").eq("id", shopId).single(),
@@ -17,6 +17,7 @@ export default async function SettingsPage() {
   return (
     <SettingsForm
       shopId={shopId}
+      canEditShop={role === "owner"}
       shop={{
         name: shop?.name ?? "",
         address: shop?.address ?? "",

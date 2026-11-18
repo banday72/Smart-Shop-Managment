@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getShopContext } from "@/lib/authz";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const categorySchema = z.object({ name: z.string().trim().min(2).max(80) });
 
@@ -56,4 +57,28 @@ export async function rejectAccessRequest(formData: FormData) {
   if (error) return { ok: false, message: error.message };
   revalidatePath("/admin");
   return { ok: true, message: "Request rejected." };
+}
+
+export async function resetMemberPassword(formData: FormData) {
+  const context = await getShopContext(["owner", "manager"]);
+  if ("error" in context) return { ok: false, message: context.error };
+  const parsed = z.object({
+    userId: z.string().uuid(),
+    password: z.string().min(6, "Password must be at least 6 characters.").max(72),
+  }).safeParse({ userId: formData.get("userId"), password: formData.get("password") });
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Invalid password reset request." };
+  const { data: member } = await context.supabase
+    .from("shop_members")
+    .select("role")
+    .eq("shop_id", context.shopId)
+    .eq("user_id", parsed.data.userId)
+    .maybeSingle();
+  if (!member) return { ok: false, message: "Team member not found." };
+  if (member.role === "owner") return { ok: false, message: "Owner passwords cannot be reset here." };
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, message: "Password reset is not configured. Add SUPABASE_SERVICE_ROLE_KEY on the server." };
+  const { error } = await admin.auth.admin.updateUserById(parsed.data.userId, { password: parsed.data.password });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/admin");
+  return { ok: true, message: "Password reset successfully." };
 }

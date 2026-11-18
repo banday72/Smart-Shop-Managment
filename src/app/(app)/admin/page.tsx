@@ -1,7 +1,7 @@
 import { io } from "next/cache";
 import { redirect } from "next/navigation";
 import { getShopContext } from "@/lib/authz";
-import { AddCategoryForm, ApproveRequestForm, ChangeRoleForm, RejectRequestForm } from "./team-forms";
+import { AddCategoryForm, ApproveRequestForm, ChangeRoleForm, RejectRequestForm, ResetMemberPasswordForm } from "./team-forms";
 
 export default async function ShopPage() {
   await io();
@@ -39,13 +39,15 @@ export default async function ShopPage() {
 
         <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
           <p className="eyebrow">Current team</p><h2 className="mt-2 text-lg font-semibold">Members</h2>
+          <p className="mt-1 text-sm text-slate-500">Owners and managers can reset passwords for manager/cashier accounts. Use Settings to change your own password.</p>
           <div className="mt-4 divide-y">
             {team?.map((member) => (
               <div key={member.user_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div><p className="font-medium text-slate-800">{member.full_name || "Unnamed member"}</p>{member.user_id === userId && <p className="text-xs text-amber-600">You</p>}</div>
-                {isOwner ? (
-                  <ChangeRoleForm profileId={member.user_id} role={member.role} />
-                ) : <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{member.role}</span>}
+                <div><p className="font-medium text-slate-800">{member.full_name || "Unnamed member"}</p><p className="text-xs text-slate-500 capitalize">{member.role}{member.user_id === userId ? " • You" : ""}</p></div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {isOwner ? <ChangeRoleForm profileId={member.user_id} role={member.role} /> : <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{member.role}</span>}
+                  {member.role !== "owner" && <ResetMemberPasswordForm userId={member.user_id} />}
+                </div>
               </div>
             ))}
           </div>
